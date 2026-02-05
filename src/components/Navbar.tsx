@@ -1,6 +1,7 @@
  import { Search, BookOpen, Users, FolderOpen, Menu, X } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { useState } from "react";
+ import ThemeToggle from "./ThemeToggle";
  
  const Navbar = () => {
    const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -33,6 +34,7 @@
          </div>
  
          <div className="hidden items-center gap-3 md:flex">
+           <ThemeToggle />
            <Button variant="ghost" size="sm">
              Sign In
            </Button>
@@ -71,6 +73,7 @@
              <Button size="sm" className="bg-primary hover:bg-primary/90">
                Get Started
              </Button>
+             <ThemeToggle />
            </div>
          </div>
        )}
