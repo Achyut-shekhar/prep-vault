@@ -1,73 +1,105 @@
-# Welcome to your Lovable project
+# PrepVault 🚀
 
-## Project info
+**A Full-Stack Placement Preparation Platform**
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+PrepVault aggregates interview resources from across the internet using the Google Search API and allows users to save, organize, and share placement materials through private and public study vaults.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🎯 Problem Statement
 
-**Use Lovable**
+Placement preparation content is scattered across hundreds of websites — blogs, PDFs, YouTube, GitHub repos, interview experiences, and cheat sheets.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+**Students waste time:**
+*   Searching repeatedly for the same topics.
+*   Losing track of good resources.
+*   Struggling to organize company-specific preparation materials.
+*   Finding it difficult to share curated material with peers.
 
-Changes made via Lovable will be committed automatically to this repo.
+## ✅ Solution Overview
 
-**Use your preferred IDE**
+**PrepVault solves this by:**
+1.  **Aggregating** placement resources from trusted public sources in one place.
+2.  **Organizing** resources into folders (company-wise / exam-wise).
+3.  **Enabling** private & shareable study vaults.
+4.  **Facilitating** peer-to-peer knowledge sharing.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🏗️ Core Features
 
-Follow these steps:
+### 1️⃣ Smart Search & Resource Aggregation
+*   **Powered by:** Google Custom Search API.
+*   **Functionality:** Users search for topics like "Amazon SDE", "HackWithInfy", "GATE CSE".
+*   **Result:** A unified page showing Blogs, Interview Experiences, Cheat Sheets, PDFs, GitHub Repos, and Video Links.
+*   **Safety:** We do not copy content; we provide legal links + previews.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 2️⃣ Personal Study Vault (Private)
+*   **Folder-Based Organization:** Create folders like `📂 Amazon SDE`, `📂 DSA Revision`.
+*   **Private Storage:** Save article links, PDFs, and notes visible only to you.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 3️⃣ Shareable Resources (Public)
+*   **Shareable Folders:** specific folders can be made public to generate a unique link.
+*   **Community Sharing:** Perfect for sharing curated lists with juniors, friends, or study groups.
+    *   *Example:* `https://prepvault.app/share/amazon-sde-achyut`
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 4️⃣ Community Feed
+*   A placement-focused microblog (Twitter/Reddit style).
+*   Users can post interview experiences, tips, and resource links.
+*   Resources from the feed can be directly saved to your Personal Vault.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### 5️⃣ Authentication & User Accounts
+*   Secure login via Google or Email/Password.
+*   Cloud-based profile management.
+
+---
+
+## 💻 Technology Stack
+
+### Frontend
+- **Framework:** React + Vite
+- **Language:** JavaScript
+- **Styling:** Tailwind CSS + Shadcn/UI
+- **State Management:** Tanstack Query
+- **Routing:** React Router DOM
+
+### Backend & Infrastructure
+- **Server:** Node.js (Express) or Serverless Functions
+- **Database:** Firebase / PostgreSQL
+- **Authentication:** Firebase Auth / Clerk
+- **External API:** Google Programmable Search Engine API
+
+---
+
+## 📂 Project Structure
+
+```
+prep-vault/
+├── frontend/            # React + Vite Application
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── backend/             # Backend API & Services (In Development)
+└── README.md            # Project Documentation
 ```
 
-**Edit a file directly in GitHub**
+## 🛠️ Installation & Setup
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1.  **Clone the repository:**
+    ```sh
+    git clone https://github.com/Achyut-shekhar/prep-vault.git
+    cd prep-vault
+    ```
 
-**Use GitHub Codespaces**
+2.  **Frontend Setup:**
+    ```sh
+    cd frontend
+   bun install
+   bun dev
+    ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+3.  **Backend Setup:**
+    *   *(Coming Soon)*
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 📄 License
+This project is licensed under the MIT License.
