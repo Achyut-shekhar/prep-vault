@@ -1,6 +1,8 @@
- import { FolderOpen, FolderPlus, Lock, Globe, ChevronRight, Plus } from "lucide-react";
+import { FolderOpen, Lock, Globe, ChevronRight, Plus } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { useState } from "react";
+import NewFolderDialog from "./NewFolderDialog";
+import { toast } from "sonner";
  
  interface Folder {
    id: string;
@@ -18,9 +20,21 @@
  ];
  
  const VaultSidebar = () => {
-   const [folders] = useState<Folder[]>(mockFolders);
+  const [folders, setFolders] = useState<Folder[]>(mockFolders);
    const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
  
+  const handleCreateFolder = (name: string, isPublic: boolean) => {
+    const newFolder: Folder = {
+      id: Date.now().toString(),
+      name,
+      isPublic,
+      resourceCount: 0,
+    };
+    setFolders([newFolder, ...folders]);
+    setSelectedFolder(newFolder.id);
+    toast.success(`Folder "${name}" created successfully!`);
+  };
+
    return (
      <section id="vault" className="py-20">
        <div className="container mx-auto px-4">
@@ -31,10 +45,7 @@
                Organize resources into folders for focused preparation
              </p>
            </div>
-           <Button className="gap-2 bg-primary hover:bg-primary/90">
-             <FolderPlus className="h-4 w-4" />
-             New Folder
-           </Button>
+          <NewFolderDialog onCreateFolder={handleCreateFolder} />
          </div>
  
          <div className="grid gap-6 lg:grid-cols-3">
