@@ -3,8 +3,6 @@ import Navbar from "@/components/Navbar";
 import HeroSearch from "@/components/HeroSearch";
 import SearchResults from "@/components/SearchResults";
 import Features from "@/components/Features";
-import VaultSidebar from "@/components/VaultSidebar";
-import CommunityFeed from "@/components/CommunityFeed";
 import Footer from "@/components/Footer";
 // Mock search results data
 const mockResults = [
@@ -75,9 +73,6 @@ const Index = () => {
         
         {!hasSearched && <Features />}
         
-        <VaultSidebar />
-        
-        <CommunityFeed />
       </main>
       
       <Footer />
