@@ -2,16 +2,19 @@ import ResourceCard from "./ResourceCard";
 import { Filter, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-const filterTypes = ["All", "Articles", "PDFs", "Videos", "GitHub"];
+const filterTypes = ["All", "Articles", "Videos", "GitHub"];
 const SearchResults = ({ query, results }) => {
     const [activeFilter, setActiveFilter] = useState("All");
-    const filteredResults = results.filter((resource) => {
+    
+    // Ensure results is an array to prevent crashes
+    const safeResults = Array.isArray(results) ? results : [];
+
+    const filteredResults = safeResults.filter((resource) => {
         if (activeFilter === "All")
             return true;
         if (activeFilter === "Articles")
             return resource.type === "blog";
-        if (activeFilter === "PDFs")
-            return resource.type === "pdf";
+
         if (activeFilter === "Videos")
             return resource.type === "video";
         if (activeFilter === "GitHub")
@@ -38,7 +41,7 @@ const SearchResults = ({ query, results }) => {
                    {filter}
                  </button>))}
              </div>
-             <Button variant="outline" size="icon" className="shrink-0">
+             <Button variant="outline" size="icon" className="shrink-0" aria-label="Filter options">
                <SlidersHorizontal className="h-4 w-4"/>
              </Button>
            </div>
