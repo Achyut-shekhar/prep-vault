@@ -9,14 +9,16 @@ The Vault feature is a complete full-stack implementation that allows users to o
 ## Architecture
 
 ### Tech Stack
+
 - **Backend:** Node.js + Express + MongoDB + Multer
 - **Frontend:** React + Shadcn/UI + Tanstack Query
 - **Database:** MongoDB Atlas (NoSQL)
 - **File Storage:** Local filesystem (uploads directory)
 
 ### Data Flow
+
 ```
-User Action → Frontend Component → API Request → Express Route → 
+User Action → Frontend Component → API Request → Express Route →
 Mongoose Model → MongoDB → Response → Frontend Update
 ```
 
@@ -27,6 +29,7 @@ Mongoose Model → MongoDB → Response → Frontend Update
 ### 1. Database Models
 
 #### Vault Model (`backend/models/Vault.js`)
+
 ```javascript
 {
   name: String (required),
@@ -40,11 +43,13 @@ Mongoose Model → MongoDB → Response → Frontend Update
 
 **Purpose:** Stores folder/vault metadata
 **Key Features:**
+
 - Public/Private toggle
 - Auto-timestamps (createdAt, updatedAt)
 - Resource count for quick display
 
 #### Resource Model (`backend/models/Resource.js`)
+
 ```javascript
 {
   vaultId: ObjectId (ref: 'Vault', required),
@@ -63,6 +68,7 @@ Mongoose Model → MongoDB → Response → Frontend Update
 
 **Purpose:** Stores individual resources (links or files)
 **Key Features:**
+
 - Polymorphic storage (links and files)
 - File metadata tracking
 - Tagging support
@@ -70,12 +76,14 @@ Mongoose Model → MongoDB → Response → Frontend Update
 ### 2. API Routes (`backend/routes/vault.js`)
 
 #### Vault Management
+
 - **GET `/api/vault`** - Fetch all vaults for a user
 - **POST `/api/vault`** - Create new vault
 - **PUT `/api/vault/:id`** - Update vault details
 - **DELETE `/api/vault/:id`** - Delete vault and all its resources
 
 #### Resource Management
+
 - **GET `/api/vault/:vaultId/resources`** - Get all resources in a vault
 - **POST `/api/vault/:vaultId/resources/link`** - Add a web link
 - **POST `/api/vault/:vaultId/resources/file`** - Upload a file
@@ -85,6 +93,7 @@ Mongoose Model → MongoDB → Response → Frontend Update
 ### 3. File Upload Configuration
 
 **Multer Setup:**
+
 ```javascript
 const storage = multer.diskStorage({
   destination: 'backend/uploads/',
@@ -99,11 +108,13 @@ const upload = multer({
 ```
 
 **Accepted File Types:**
+
 - Documents: `.pdf`, `.doc`, `.docx`, `.txt`
 - Images: `.png`, `.jpg`, `.jpeg`
 - Archives: `.zip`
 
 **File Naming:**
+
 - Format: `{timestamp}-{random}.{extension}`
 - Example: `1707494400000-123456789.pdf`
 
@@ -112,11 +123,12 @@ const upload = multer({
 ```javascript
 const connectDB = async () => {
   await mongoose.connect(process.env.MONGODB_URI);
-  console.log('MongoDB connected successfully');
+  console.log("MongoDB connected successfully");
 };
 ```
 
 **Environment Variables (.env):**
+
 ```
 PORT=5000
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/
@@ -133,12 +145,14 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/
 **Purpose:** Main vault interface with folder list and resource display
 
 **Features:**
+
 - Lists all user vaults with resource count
 - Shows public/private status (Globe/Lock icons)
 - Displays resources when folder is selected
 - Real-time updates via API calls
 
 **State Management:**
+
 ```javascript
 const [folders, setFolders] = useState([]);
 const [selectedFolder, setSelectedFolder] = useState(null);
@@ -146,6 +160,7 @@ const [resources, setResources] = useState([]);
 ```
 
 **Key Functions:**
+
 - `fetchVaults()` - Load user's vaults
 - `fetchResources(vaultId)` - Load resources for selected vault
 - `handleDeleteResource(resourceId)` - Remove resource
@@ -156,6 +171,7 @@ const [resources, setResources] = useState([]);
 **Purpose:** Dialog for creating new vaults
 
 **Features:**
+
 - Name input with validation
 - Public/Private toggle switch
 - Creates vault via API
@@ -165,6 +181,7 @@ const [resources, setResources] = useState([]);
 **Purpose:** Multi-tab dialog for adding resources to vaults
 
 **Tabs:**
+
 1. **Link Tab**
    - Title input
    - URL input (with validation)
@@ -179,26 +196,27 @@ const [resources, setResources] = useState([]);
    - Uploads to `/api/vault/:vaultId/resources/file`
 
 **Implementation:**
+
 ```javascript
 // Link submission
 const handleAddLink = async (e) => {
   const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(linkData)
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(linkData),
   });
 };
 
 // File upload
 const handleFileUpload = async (e) => {
   const formData = new FormData();
-  formData.append('file', file);
-  formData.append('title', title);
-  formData.append('description', description);
-  
+  formData.append("file", file);
+  formData.append("title", title);
+  formData.append("description", description);
+
   const response = await fetch(url, {
-    method: 'POST',
-    body: formData
+    method: "POST",
+    body: formData,
   });
 };
 ```
@@ -208,6 +226,7 @@ const handleFileUpload = async (e) => {
 **Purpose:** Bookmark dialog for saving search results to vaults
 
 **Features:**
+
 - Fetches user's vaults on open
 - Displays vault list with resource counts
 - One-click save to selected folder
@@ -215,6 +234,7 @@ const handleFileUpload = async (e) => {
 - Navigates to Vault page if no folders exist
 
 **Integration:**
+
 ```javascript
 <SaveToVaultDialog resource={resource} onSaved={handleSaved}>
   <Button>Bookmark Icon</Button>
@@ -222,6 +242,7 @@ const handleFileUpload = async (e) => {
 ```
 
 **Saved Resource Format:**
+
 ```javascript
 {
   title: resource.title,
@@ -236,6 +257,7 @@ const handleFileUpload = async (e) => {
 **Purpose:** Display search results with bookmark functionality
 
 **Features:**
+
 - Shows resource type badge (Article, Video, GitHub, PDF)
 - Bookmark button with SaveToVaultDialog
 - Visual feedback (BookmarkCheck icon when saved)
@@ -246,6 +268,7 @@ const handleFileUpload = async (e) => {
 ## API Request/Response Examples
 
 ### Create Vault
+
 ```javascript
 // Request
 POST /api/vault
@@ -269,6 +292,7 @@ POST /api/vault
 ```
 
 ### Add Link Resource
+
 ```javascript
 // Request
 POST /api/vault/65abc123.../resources/link
@@ -293,6 +317,7 @@ POST /api/vault/65abc123.../resources/link
 ```
 
 ### Upload File
+
 ```javascript
 // Request
 POST /api/vault/65abc123.../resources/file
@@ -358,11 +383,13 @@ description: "Quick reference for algorithms"
 ## Error Handling
 
 ### Backend
+
 - **404 Errors:** Vault or resource not found
 - **400 Errors:** Invalid input, file type not allowed
 - **500 Errors:** Database or file system errors
 
 ### Frontend
+
 - **Toast Notifications:** Success/error messages
 - **Loading States:** Spinners during API calls
 - **Empty States:** Messages when no folders or resources exist
@@ -373,12 +400,14 @@ description: "Quick reference for algorithms"
 ## Security Considerations
 
 ### Current Implementation
+
 - CORS enabled for localhost development
 - File size limits (10MB max)
 - File type restrictions (whitelist only)
 - Express built-in JSON size limits
 
 ### Recommended Enhancements
+
 - [ ] User authentication & authorization
 - [ ] JWT token-based API security
 - [ ] File virus scanning
@@ -392,6 +421,7 @@ description: "Quick reference for algorithms"
 ## Database Indexes
 
 **Recommended indexes for performance:**
+
 ```javascript
 // Vault collection
 db.vaults.createIndex({ userId: 1, createdAt: -1 });
@@ -406,6 +436,7 @@ db.resources.createIndex({ type: 1 });
 ## File Storage Strategy
 
 ### Current: Local Filesystem
+
 ```
 backend/
 └── uploads/
@@ -415,17 +446,20 @@ backend/
 ```
 
 **Pros:**
+
 - Simple implementation
 - No external dependencies
 - Fast local access
 
 **Cons:**
+
 - Not scalable
 - No redundancy
 - Server disk space limited
 - Lost on server restart (if not persistent)
 
 ### Future: Cloud Storage (Recommended)
+
 - **AWS S3:** Scalable, secure, CDN-ready
 - **Cloudinary:** Image/video optimization
 - **Google Cloud Storage:** Similar to S3
@@ -436,6 +470,7 @@ backend/
 ## Testing Checklist
 
 ### Backend API Tests
+
 - [ ] Create vault
 - [ ] Get all vaults
 - [ ] Update vault
@@ -448,6 +483,7 @@ backend/
 - [ ] Handle large files (>10MB rejection)
 
 ### Frontend UI Tests
+
 - [ ] Display vault list
 - [ ] Create new vault
 - [ ] Select vault and view resources
@@ -466,6 +502,7 @@ backend/
 ## Performance Optimization
 
 ### Backend
+
 - Implement pagination for large resource lists
 - Add caching layer (Redis)
 - Optimize MongoDB queries with proper indexes
@@ -473,6 +510,7 @@ backend/
 - Use streaming for large file downloads
 
 ### Frontend
+
 - Lazy load resource images
 - Implement virtual scrolling for long lists
 - Debounce search inputs
@@ -484,6 +522,7 @@ backend/
 ## Future Enhancements
 
 ### Planned Features
+
 1. **Sharing:** Generate public links for vaults
 2. **Collaboration:** Allow multiple users per vault
 3. **Search:** Full-text search within resources
@@ -500,6 +539,7 @@ backend/
 ## Deployment Considerations
 
 ### Backend
+
 - Set `NODE_ENV=production`
 - Configure MongoDB connection pooling
 - Set up file upload limits on reverse proxy (Nginx)
@@ -508,6 +548,7 @@ backend/
 - Set up monitoring (PM2, New Relic)
 
 ### Frontend
+
 - Build with `npm run build`
 - Serve static files via CDN
 - Configure API endpoint via environment variables
@@ -515,6 +556,7 @@ backend/
 - Set up error tracking (Sentry)
 
 ### Database
+
 - Enable MongoDB Atlas backups
 - Set up read replicas for scaling
 - Configure authentication and network access
@@ -527,24 +569,28 @@ backend/
 ### Common Issues
 
 **Issue:** Files not uploading
+
 - Check `uploads/` directory exists
 - Verify file size < 10MB
 - Confirm file type is allowed
 - Check disk space on server
 
 **Issue:** MongoDB connection fails
+
 - Verify MONGODB_URI in .env
 - Check network access in MongoDB Atlas
 - Confirm database user credentials
 - Test connection with MongoDB Compass
 
 **Issue:** Resources not displaying
+
 - Check browser console for errors
 - Verify API endpoint is running
 - Test API with Postman/Thunder Client
 - Check CORS configuration
 
 **Issue:** Slow file downloads
+
 - Implement streaming for large files
 - Consider CDN for static files
 - Check server bandwidth

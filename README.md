@@ -11,14 +11,16 @@ PrepVault aggregates interview resources from across the internet using search A
 Placement preparation content is scattered across hundreds of websites — blogs, PDFs, YouTube, GitHub repos, interview experiences, and cheat sheets.
 
 **Students waste time:**
-*   Searching repeatedly for the same topics.
-*   Losing track of good resources.
-*   Struggling to organize company-specific preparation materials.
-*   Finding it difficult to share curated material with peers.
+
+- Searching repeatedly for the same topics.
+- Losing track of good resources.
+- Struggling to organize company-specific preparation materials.
+- Finding it difficult to share curated material with peers.
 
 ## ✅ Solution Overview
 
 **PrepVault solves this by:**
+
 1.  **Aggregating** placement resources from trusted public sources in one place.
 2.  **Organizing** resources into folders (company-wise / exam-wise) with MongoDB storage.
 3.  **Enabling** private & shareable study vaults with file upload support.
@@ -30,41 +32,47 @@ Placement preparation content is scattered across hundreds of websites — blogs
 ## 🏗️ Core Features
 
 ### 1️⃣ Smart Search & Resource Aggregation
-*   **Powered by:** Custom Search API integration.
-*   **Functionality:** Users search for topics like "Amazon SDE", "HackWithInfy", "GATE CSE".
-*   **Result:** A unified page showing Blogs, Interview Experiences, GitHub Repos, and Video Links.
-*   **Bookmark:** Save any search result directly to your vault folders.
+
+- **Powered by:** Custom Search API integration.
+- **Functionality:** Users search for topics like "Amazon SDE", "HackWithInfy", "GATE CSE".
+- **Result:** A unified page showing Blogs, Interview Experiences, GitHub Repos, and Video Links.
+- **Bookmark:** Save any search result directly to your vault folders.
 
 ### 2️⃣ Personal Study Vault (MongoDB-Powered)
-*   **Folder-Based Organization:** Create folders like `📂 Amazon SDE`, `📂 DSA Revision`.
-*   **Private/Public Toggle:** Each folder can be marked as private or public.
-*   **Resource Types:** 
-    - Save web links with title, URL, and description
-    - Upload files (PDF, DOC, DOCX, TXT, images, ZIP) up to 10MB
-    - Organize with tags and categories
-*   **Cloud Storage:** All data persisted in MongoDB Atlas.
-*   **File Management:** Download, view, and delete resources.
+
+- **Folder-Based Organization:** Create folders like `📂 Amazon SDE`, `📂 DSA Revision`.
+- **Private/Public Toggle:** Each folder can be marked as private or public.
+- **Resource Types:**
+  - Save web links with title, URL, and description
+  - Upload files (PDF, DOC, DOCX, TXT, images, ZIP) up to 10MB
+  - Organize with tags and categories
+- **Cloud Storage:** All data persisted in MongoDB Atlas.
+- **File Management:** Download, view, and delete resources.
 
 ### 3️⃣ Bookmark-to-Vault Integration
-*   **One-Click Save:** Click bookmark icon on any search result.
-*   **Folder Selection:** Choose which vault folder to save the resource.
-*   **Visual Feedback:** Bookmark icon updates to show saved status.
-*   **Auto-tagging:** Resources tagged with their type (blog, video, github).
+
+- **One-Click Save:** Click bookmark icon on any search result.
+- **Folder Selection:** Choose which vault folder to save the resource.
+- **Visual Feedback:** Bookmark icon updates to show saved status.
+- **Auto-tagging:** Resources tagged with their type (blog, video, github).
 
 ### 4️⃣ Community Feed (Planned)
-*   A placement-focused microblog (Twitter/Reddit style).
-*   Users can post interview experiences, tips, and resource links.
-*   Resources from the feed can be directly saved to your Personal Vault.
+
+- A placement-focused microblog (Twitter/Reddit style).
+- Users can post interview experiences, tips, and resource links.
+- Resources from the feed can be directly saved to your Personal Vault.
 
 ### 5️⃣ Authentication & User Accounts (Planned)
-*   Secure login via Google or Email/Password.
-*   Cloud-based profile management.
+
+- Secure login via Google or Email/Password.
+- Cloud-based profile management.
 
 ---
 
 ## 💻 Technology Stack
 
 ### Frontend
+
 - **Framework:** React 18 + Vite
 - **Language:** JavaScript (JSX)
 - **Styling:** Tailwind CSS + Shadcn/UI Components
@@ -75,6 +83,7 @@ Placement preparation content is scattered across hundreds of websites — blogs
 - **Notifications:** Sonner (Toast notifications)
 
 ### Backend & Infrastructure
+
 - **Server:** Node.js with Express 5
 - **Database:** MongoDB Atlas (Cloud)
 - **ODM:** Mongoose 8
@@ -83,6 +92,7 @@ Placement preparation content is scattered across hundreds of websites — blogs
 - **Environment:** dotenv for configuration
 
 ### External APIs
+
 - **Search:** Google Custom Search API integration
 - **Data Sources:** Web scraping with Cheerio, Axios
 
@@ -132,11 +142,13 @@ prep-vault/
 ## 🛠️ Installation & Setup
 
 ### Prerequisites
+
 - Node.js 18+ and npm/bun
 - MongoDB Atlas account (or local MongoDB)
 - Git
 
 ### 1️⃣ Clone the Repository
+
 ```bash
 git clone https://github.com/Achyut-shekhar/prep-vault.git
 cd prep-vault
@@ -183,9 +195,11 @@ bun dev
 ## 🔌 API Endpoints
 
 ### Search API
+
 - `POST /api/search` - Search for resources
 
 ### Vault API
+
 - `GET /api/vault` - Get all vaults for user
 - `POST /api/vault` - Create new vault
 - `PUT /api/vault/:id` - Update vault
@@ -235,6 +249,7 @@ This project is licensed under the ISC License.
 ## 👨‍💻 Author
 
 **Achyut Shekhar**
+
 - GitHub: [@Achyut-shekhar](https://github.com/Achyut-shekhar)
 
 ---
