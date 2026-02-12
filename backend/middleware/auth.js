@@ -4,7 +4,7 @@ const auth = (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.header("Authorization");
-    
+
     if (!authHeader) {
       return res
         .status(401)
