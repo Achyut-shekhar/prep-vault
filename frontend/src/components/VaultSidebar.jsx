@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import NewFolderDialog from "./NewFolderDialog";
 import AddResourceDialog from "./AddResourceDialog";
 import { toast } from "sonner";
+import { vaultApi } from "@/lib/api";
 
 const VaultSidebar = () => {
   const [folders, setFolders] = useState([]);
@@ -34,43 +35,31 @@ const VaultSidebar = () => {
 
   const fetchVaults = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/vault");
-      const data = await response.json();
-      setFolders(data);
+      const data = await vaultApi.getVaults();
+      setFolders(data || []);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching vaults:", error);
       toast.error("Failed to load vaults");
+      setFolders([]);
       setLoading(false);
     }
   };
 
   const fetchResources = async (vaultId) => {
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/vault/${vaultId}/resources`,
-      );
-      const data = await response.json();
-      setResources(data);
+      const data = await vaultApi.getResources(vaultId);
+      setResources(data || []);
     } catch (error) {
       console.error("Error fetching resources:", error);
       toast.error("Failed to load resources");
+      setResources([]);
     }
   };
 
   const handleCreateFolder = async (name, isPublic) => {
     try {
-      const response = await fetch("http://localhost:5000/api/vault", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, isPublic }),
-      });
-
-      if (!response.ok) throw new Error("Failed to create vault");
-
-      const newVault = await response.json();
+      const newVault = await vaultApi.createVault({ name, isPublic });
       setFolders([newVault, ...folders]);
       setSelectedFolder(newVault._id);
       toast.success(`Folder "${name}" created successfully!`);
@@ -96,13 +85,7 @@ const VaultSidebar = () => {
     if (!confirm("Are you sure you want to delete this resource?")) return;
 
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/vault/${selectedFolder}/resources/${resourceId}`,
-        { method: "DELETE" },
-      );
-
-      if (!response.ok) throw new Error("Failed to delete resource");
-
+      await vaultApi.deleteResource(selectedFolder, resourceId);
       setResources(resources.filter((r) => r._id !== resourceId));
       setFolders(
         folders.map((f) =>
@@ -122,10 +105,7 @@ const VaultSidebar = () => {
     if (resource.type === "link") {
       window.open(resource.url, "_blank");
     } else {
-      window.open(
-        `http://localhost:5000/api/vault/resources/${resource._id}/download`,
-        "_blank",
-      );
+      window.open(vaultApi.getDownloadUrl(resource._id), "_blank");
     }
   };
 

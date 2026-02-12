@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { vaultApi } from "@/lib/api";
 
 const AddResourceDialog = ({ vaultId, onResourceAdded }) => {
   const [open, setOpen] = useState(false);
@@ -38,20 +39,7 @@ const AddResourceDialog = ({ vaultId, onResourceAdded }) => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/vault/${vaultId}/resources/link`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(linkData),
-        },
-      );
-
-      if (!response.ok) throw new Error("Failed to add link");
-
-      const resource = await response.json();
+      const resource = await vaultApi.addLinkResource(vaultId, linkData);
       toast.success("Link added successfully!");
       setLinkData({ title: "", url: "", description: "" });
       setOpen(false);
@@ -80,17 +68,7 @@ const AddResourceDialog = ({ vaultId, onResourceAdded }) => {
       formData.append("title", fileData.title || file.name);
       formData.append("description", fileData.description);
 
-      const response = await fetch(
-        `http://localhost:5000/api/vault/${vaultId}/resources/file`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-
-      if (!response.ok) throw new Error("Failed to upload file");
-
-      const resource = await response.json();
+      const resource = await vaultApi.uploadFileResource(vaultId, formData);
       toast.success("File uploaded successfully!");
       setFile(null);
       setFileData({ title: "", description: "" });
