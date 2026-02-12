@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { vaultApi } from "@/lib/api";
 
 const SaveToVaultDialog = ({ resource, children, onSaved }) => {
   const [open, setOpen] = useState(false);
@@ -30,13 +31,12 @@ const SaveToVaultDialog = ({ resource, children, onSaved }) => {
   const fetchVaults = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/vault");
-      if (!response.ok) throw new Error("Failed to fetch vaults");
-      const data = await response.json();
-      setVaults(data);
+      const data = await vaultApi.getVaults();
+      setVaults(data || []);
     } catch (error) {
       console.error("Error fetching vaults:", error);
       toast.error("Failed to load folders");
+      setVaults([]);
     } finally {
       setLoading(false);
     }
@@ -47,25 +47,13 @@ const SaveToVaultDialog = ({ resource, children, onSaved }) => {
     setSelectedVault(vaultId);
 
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/vault/${vaultId}/resources/link`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: resource.title,
-            url: resource.url,
-            description: resource.description || "",
-            tags: [resource.type],
-          }),
-        },
-      );
+      const savedResource = await vaultApi.addLinkResource(vaultId, {
+        title: resource.title,
+        url: resource.url,
+        description: resource.description || "",
+        tags: [resource.type],
+      });
 
-      if (!response.ok) throw new Error("Failed to save resource");
-
-      const savedResource = await response.json();
       toast.success("Resource saved to vault!");
       setOpen(false);
       if (onSaved) {

@@ -15,8 +15,10 @@ app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
 // Routes
+const authRoutes = require("./routes/auth");
 const searchRoutes = require("./routes/search");
 const vaultRoutes = require("./routes/vault");
+app.use("/api/auth", authRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/vault", vaultRoutes);
 

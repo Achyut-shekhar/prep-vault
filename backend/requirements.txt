@@ -29,3 +29,7 @@ ytsr@^3.8.4
 
 # Development
 nodemon@^3.1.11
+
+#Authentication
+jsonwebtoken@9.0.3 
+bcryptjs@3.0.3
