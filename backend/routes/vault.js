@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Vault = require("../models/Vault");
 const Resource = require("../models/Resource");
+const auth = require("../middleware/auth");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -48,9 +49,9 @@ const upload = multer({
 });
 
 // Get all vaults for a user
-router.get("/", async (req, res) => {
+router.get("/", auth, async (req, res) => {
   try {
-    const userId = req.query.userId || "default-user"; // TODO: Add proper auth
+    const userId = req.user.userId;
     const vaults = await Vault.find({ userId }).sort({ createdAt: -1 });
     res.json(vaults);
   } catch (error) {
@@ -60,10 +61,10 @@ router.get("/", async (req, res) => {
 });
 
 // Create a new vault
-router.post("/", async (req, res) => {
+router.post("/", auth, async (req, res) => {
   try {
     const { name, isPublic, description } = req.body;
-    const userId = req.body.userId || "default-user"; // TODO: Add proper auth
+    const userId = req.user.userId;
 
     const vault = new Vault({
       name,
@@ -81,7 +82,7 @@ router.post("/", async (req, res) => {
 });
 
 // Update a vault
-router.put("/:id", async (req, res) => {
+router.put("/:id", auth, async (req, res) => {
   try {
     const { name, isPublic, description } = req.body;
     const vault = await Vault.findByIdAndUpdate(
@@ -102,7 +103,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // Delete a vault
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, async (req, res) => {
   try {
     const vault = await Vault.findByIdAndDelete(req.params.id);
 
@@ -121,7 +122,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Get all resources for a vault
-router.get("/:vaultId/resources", async (req, res) => {
+router.get("/:vaultId/resources", auth, async (req, res) => {
   try {
     const resources = await Resource.find({ vaultId: req.params.vaultId }).sort(
       { createdAt: -1 },
@@ -134,7 +135,7 @@ router.get("/:vaultId/resources", async (req, res) => {
 });
 
 // Add a link resource
-router.post("/:vaultId/resources/link", async (req, res) => {
+router.post("/:vaultId/resources/link", auth, async (req, res) => {
   try {
     const { title, url, description, tags } = req.body;
 
@@ -164,6 +165,7 @@ router.post("/:vaultId/resources/link", async (req, res) => {
 // Upload a file resource
 router.post(
   "/:vaultId/resources/file",
+  auth,
   upload.single("file"),
   async (req, res) => {
     try {
@@ -201,7 +203,7 @@ router.post(
 );
 
 // Delete a resource
-router.delete("/:vaultId/resources/:resourceId", async (req, res) => {
+router.delete("/:vaultId/resources/:resourceId", auth, async (req, res) => {
   try {
     const resource = await Resource.findById(req.params.resourceId);
 
@@ -229,7 +231,7 @@ router.delete("/:vaultId/resources/:resourceId", async (req, res) => {
 });
 
 // Download a file
-router.get("/resources/:resourceId/download", async (req, res) => {
+router.get("/resources/:resourceId/download", auth, async (req, res) => {
   try {
     const resource = await Resource.findById(req.params.resourceId);
 
