@@ -5,15 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 const NewFolderDialog = ({ onCreateFolder }) => {
     const [open, setOpen] = useState(false);
     const [folderName, setFolderName] = useState("");
+  const [folderNotes, setFolderNotes] = useState("");
     const [isPublic, setIsPublic] = useState(false);
     const handleSubmit = (e) => {
         e.preventDefault();
         if (folderName.trim()) {
-            onCreateFolder(folderName.trim(), isPublic);
+      onCreateFolder(folderName.trim(), isPublic, folderNotes.trim());
             setFolderName("");
+      setFolderNotes("");
             setIsPublic(false);
             setOpen(false);
         }
@@ -52,6 +55,11 @@ const NewFolderDialog = ({ onCreateFolder }) => {
            <div className="space-y-2">
              <Label htmlFor="folder-name">Folder Name</Label>
              <Input id="folder-name" placeholder="e.g., Amazon SDE Prep" value={folderName} onChange={(e) => setFolderName(e.target.value)} className="h-11" autoFocus/>
+           </div>
+
+           <div className="space-y-2">
+             <Label htmlFor="folder-notes">Notes (Optional)</Label>
+             <Textarea id="folder-notes" placeholder="Add notes for this folder..." value={folderNotes} onChange={(e) => setFolderNotes(e.target.value)} className="min-h-24" maxLength={500}/>
            </div>
  
            {/* Quick Suggestions */}

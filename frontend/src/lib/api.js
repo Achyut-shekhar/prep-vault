@@ -126,6 +126,81 @@ export const vaultApi = {
     });
   },
 
+  // Get all notes for a vault
+  getNotes: async (vaultId) => {
+    return apiRequest(`/vault/${vaultId}/notes`);
+  },
+
+  // Create a note in a vault
+  addNote: async (vaultId, noteData) => {
+    return apiRequest(`/vault/${vaultId}/notes`, {
+      method: "POST",
+      body: JSON.stringify(noteData),
+    });
+  },
+
+  // Update a note in a vault
+  updateNote: async (vaultId, noteId, noteData) => {
+    return apiRequest(`/vault/${vaultId}/notes/${noteId}`, {
+      method: "PUT",
+      body: JSON.stringify(noteData),
+    });
+  },
+
+  // Delete a note in a vault
+  deleteNote: async (vaultId, noteId) => {
+    return apiRequest(`/vault/${vaultId}/notes/${noteId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // Upload an image to a note
+  uploadNoteImage: async (vaultId, noteId, formData) => {
+    const token = getToken();
+    const headers = {};
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(
+      `${API_URL}/vault/${vaultId}/notes/${noteId}/images`,
+      {
+        method: "POST",
+        headers,
+        body: formData,
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
+      throw new Error(data.message || "Image upload failed");
+    }
+
+    return data;
+  },
+
+  // Delete an image from a note
+  deleteNoteImage: async (vaultId, noteId, imageId) => {
+    return apiRequest(`/vault/${vaultId}/notes/${noteId}/images/${imageId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // Build full URL for uploaded files
+  getUploadUrl: (relativeUrl) => {
+    if (!relativeUrl) return "";
+    if (relativeUrl.startsWith("http://") || relativeUrl.startsWith("https://")) {
+      return relativeUrl;
+    }
+    return `${API_URL.replace("/api", "")}${relativeUrl}`;
+  },
+
   // Get download URL for a file
   getDownloadUrl: (resourceId) => {
     const token = getToken();
