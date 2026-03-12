@@ -10,7 +10,9 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Middleware
-const productionOrigin = (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/$/, "");
+const productionOrigin = (
+  process.env.CLIENT_URL || "http://localhost:5173"
+).replace(/\/$/, "");
 app.use(
   cors({
     origin: (origin, callback) => {
