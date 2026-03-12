@@ -5,6 +5,7 @@ import SearchResults from "@/components/SearchResults";
 import Features from "@/components/Features";
 import Footer from "@/components/Footer";
 import { Loader2 } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 const Index = () => {
     const [searchQuery, setSearchQuery] = useState("");
@@ -20,7 +21,7 @@ const Index = () => {
         setError(null);
 
         try {
-            const response = await fetch(`http://localhost:5000/api/search`, {
+            const response = await fetch(`${API_URL}/search`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
