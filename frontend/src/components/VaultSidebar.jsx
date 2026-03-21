@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 import NewFolderDialog from "./NewFolderDialog";
 import AddResourceDialog from "./AddResourceDialog";
 import SimpleNotepad from "./SimpleNotepad";
+import VaultTodoList from "./VaultTodoList";
 import { toast } from "sonner";
 import { vaultApi } from "@/lib/api";
 
@@ -369,6 +370,11 @@ const VaultSidebar = () => {
                       ))
                     )}
                   </div>
+
+                  <VaultTodoList
+                    vaultId={selectedFolder}
+                    folderName={selectedFolderData?.name}
+                  />
 
                   <div className="mt-8 rounded-xl border border-border bg-background p-4">
                     <div className="mb-4 flex items-center justify-between">

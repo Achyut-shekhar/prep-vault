@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import SaveToVaultDialog from "./SaveToVaultDialog";
 import { useState } from "react";
 
+// ✅ TYPE CONFIG
 const typeConfig = {
   blog: {
     icon: <FileText className="h-3.5 w-3.5" />,
@@ -34,9 +35,20 @@ const typeConfig = {
       "bg-resource-github/10 text-resource-github border-resource-github/20",
   },
 };
+
 const ResourceCard = ({ resource }) => {
   const [isSaved, setIsSaved] = useState(false);
-  const config = typeConfig[resource.type];
+
+  // ✅ SAFE TYPE HANDLING (MAIN FIX)
+  const safeType = resource?.type?.toLowerCase?.() || "blog";
+
+  const config =
+    typeConfig[safeType] ||
+    {
+      icon: <FileText className="h-3.5 w-3.5" />,
+      label: "Article",
+      className: "bg-gray-100 text-gray-700 border-gray-200",
+    };
 
   const handleSaved = () => {
     setIsSaved(true);
@@ -44,16 +56,22 @@ const ResourceCard = ({ resource }) => {
 
   return (
     <div className="group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-lg">
+      
       {/* Hover gradient */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/[0.02] to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
+      {/* HEADER */}
       <div className="mb-3 flex items-start justify-between gap-3">
+        
+        {/* TYPE BADGE */}
         <div
           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${config.className}`}
         >
           {config.icon}
           {config.label}
         </div>
+
+        {/* SAVE BUTTON */}
         <SaveToVaultDialog resource={resource} onSaved={handleSaved}>
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
             {isSaved ? (
@@ -65,18 +83,24 @@ const ResourceCard = ({ resource }) => {
         </SaveToVaultDialog>
       </div>
 
+      {/* TITLE */}
       <h3 className="mb-2 line-clamp-2 font-semibold leading-snug transition-colors group-hover:text-primary">
-        {resource.title}
+        {resource?.title || "No Title"}
       </h3>
 
+      {/* DESCRIPTION */}
       <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">
-        {resource.description}
+        {resource?.description || "No description available"}
       </p>
 
+      {/* FOOTER */}
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">{resource.source}</span>
+        <span className="text-xs text-muted-foreground">
+          {resource?.source || "Unknown"}
+        </span>
+
         <a
-          href={resource.url}
+          href={resource?.url || "#"}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:text-primary/80"
@@ -88,4 +112,5 @@ const ResourceCard = ({ resource }) => {
     </div>
   );
 };
+
 export default ResourceCard;

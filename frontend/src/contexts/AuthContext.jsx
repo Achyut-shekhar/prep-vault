@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(null);
@@ -17,12 +17,16 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const normalizedApiUrl = rawApiUrl.replace(/\/$/, "");
+  const API_URL = normalizedApiUrl.endsWith("/api")
+    ? normalizedApiUrl
+    : `${normalizedApiUrl}/api`;
 
-  // Load user on mount if token exists
   useEffect(() => {
     const loadUser = async () => {
       const storedToken = localStorage.getItem("token");
+
       if (storedToken) {
         try {
           const response = await fetch(`${API_URL}/auth/me`, {
@@ -36,7 +40,6 @@ export const AuthProvider = ({ children }) => {
             setUser(data.user);
             setToken(storedToken);
           } else {
-            // Token is invalid, clear it
             localStorage.removeItem("token");
             setToken(null);
           }
@@ -46,6 +49,7 @@ export const AuthProvider = ({ children }) => {
           setToken(null);
         }
       }
+
       setLoading(false);
     };
 
@@ -71,6 +75,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", data.token);
       setToken(data.token);
       setUser(data.user);
+
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -96,6 +101,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", data.token);
       setToken(data.token);
       setUser(data.user);
+
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };

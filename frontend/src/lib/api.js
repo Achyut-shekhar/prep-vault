@@ -1,4 +1,9 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const normalizedApiUrl = rawApiUrl.replace(/\/$/, "");
+const API_URL = normalizedApiUrl.endsWith("/api")
+  ? normalizedApiUrl
+  : `${normalizedApiUrl}/api`;
+const BACKEND_URL = API_URL.replace(/\/api$/, "");
 
 // Get auth token from localStorage
 const getToken = () => localStorage.getItem("token");
@@ -198,7 +203,7 @@ export const vaultApi = {
     if (relativeUrl.startsWith("http://") || relativeUrl.startsWith("https://")) {
       return relativeUrl;
     }
-    return `${API_URL.replace("/api", "")}${relativeUrl}`;
+    return `${BACKEND_URL}${relativeUrl}`;
   },
 
   // Get download URL for a file

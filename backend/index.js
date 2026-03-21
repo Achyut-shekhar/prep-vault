@@ -1,6 +1,9 @@
+require('dotenv').config();
+
+console.log("ENV KEYS:", Object.keys(process.env));
+console.log("MONGO_URI:", process.env.MONGO_URI);
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
 const connectDB = require("./config/db");
 
 const app = express();
@@ -18,6 +21,7 @@ const allowedOrigins = new Set([
   "https://prepvault.in",
   "https://www.prepvault.in",
   "http://localhost:5173",
+  "http://localhost:8080",  // ✅ ADD THIS
 ]);
 
 // Include both www and non-www variants of CLIENT_URL automatically.
