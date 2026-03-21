@@ -109,9 +109,10 @@ router.post("/", auth, async (req, res) => {
 // Update a vault
 router.put("/:id", auth, async (req, res) => {
   try {
+    const userId = req.user.userId;
     const { name, isPublic, description } = req.body;
-    const vault = await Vault.findByIdAndUpdate(
-      req.params.id,
+    const vault = await Vault.findOneAndUpdate(
+      { _id: req.params.id, userId },
       { name, isPublic, description },
       { new: true },
     );
@@ -130,16 +131,28 @@ router.put("/:id", auth, async (req, res) => {
 // Delete a vault
 router.delete("/:id", auth, async (req, res) => {
   try {
-    const vault = await Vault.findByIdAndDelete(req.params.id);
+    const userId = req.user.userId;
+    const vault = await Vault.findOneAndDelete({ _id: req.params.id, userId });
 
     if (!vault) {
       return res.status(404).json({ error: "Vault not found" });
     }
 
-    // Delete all resources in the vault
+    const resources = await Resource.find({ vaultId: req.params.id });
+
+    for (const resource of resources) {
+      if (resource.filePath && fs.existsSync(resource.filePath)) {
+        fs.unlinkSync(resource.filePath);
+      }
+    }
+
+    // Delete all resources metadata for this vault
     await Resource.deleteMany({ vaultId: req.params.id });
 
-    res.json({ message: "Vault deleted successfully" });
+    res.json({
+      message:
+        "Folder deleted successfully with all its resources, notes, and to-do tasks",
+    });
   } catch (error) {
     console.error("Error deleting vault:", error);
     res.status(500).json({ error: "Failed to delete vault" });
@@ -177,6 +190,272 @@ router.get("/:vaultId/notes", auth, async (req, res) => {
   } catch (error) {
     console.error("Error fetching notes:", error);
     res.status(500).json({ error: "Failed to fetch notes" });
+  }
+});
+
+// Get all todos for a vault
+router.get("/:vaultId/todos", auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
+
+    if (!vault) {
+      return res.status(404).json({ error: "Vault not found" });
+    }
+
+    const sortedTodos = [...(vault.todos || [])].sort((a, b) => {
+      const orderA = Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER;
+      const orderB = Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER;
+
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    });
+
+    res.json(sortedTodos);
+  } catch (error) {
+    console.error("Error fetching todos:", error);
+    res.status(500).json({ error: "Failed to fetch todos" });
+  }
+});
+
+// Create a todo in a vault
+router.post("/:vaultId/todos", auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { title, description, priority, dueDate, repeat, important } = req.body;
+    const normalizedTitle = (title || "").trim();
+    const normalizedRepeat = ["none", "daily", "weekly", "monthly", "yearly"].includes(repeat)
+      ? repeat
+      : "none";
+    const normalizedImportant = typeof important === "boolean" ? important : false;
+
+    if (!normalizedTitle) {
+      return res.status(400).json({ error: "Todo title is required" });
+    }
+
+    if (normalizedTitle.length > 200) {
+      return res.status(400).json({ error: "Todo title must be at most 200 characters" });
+    }
+
+    const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
+
+    if (!vault) {
+      return res.status(404).json({ error: "Vault not found" });
+    }
+
+    let parsedDueDate = null;
+    if (dueDate) {
+      const candidate = new Date(dueDate);
+      if (Number.isNaN(candidate.getTime())) {
+        return res.status(400).json({ error: "Invalid due date" });
+      }
+      parsedDueDate = candidate;
+    }
+
+    const nextOrder = (vault.todos || []).length
+      ? Math.max(...vault.todos.map((todo) => (Number.isFinite(todo.order) ? todo.order : 0))) + 1
+      : 0;
+
+    vault.todos.push({
+      title: normalizedTitle,
+      description: typeof description === "string" ? description.trim() : "",
+      priority: ["low", "medium", "high"].includes(priority) ? priority : "medium",
+      dueDate: parsedDueDate,
+      repeat: normalizedRepeat,
+      important: normalizedImportant,
+      completed: false,
+      order: nextOrder,
+    });
+
+    await vault.save();
+    const createdTodo = vault.todos[vault.todos.length - 1];
+
+    res.status(201).json(createdTodo);
+  } catch (error) {
+    console.error("Error creating todo:", error);
+    res.status(500).json({ error: "Failed to create todo" });
+  }
+});
+
+// Reorder todos in a vault
+router.patch("/:vaultId/todos/reorder", auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { orderedTodoIds } = req.body;
+
+    if (!Array.isArray(orderedTodoIds) || orderedTodoIds.length === 0) {
+      return res.status(400).json({ error: "orderedTodoIds must be a non-empty array" });
+    }
+
+    const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
+
+    if (!vault) {
+      return res.status(404).json({ error: "Vault not found" });
+    }
+
+    const existingIds = vault.todos.map((todo) => String(todo._id));
+    const incomingIds = orderedTodoIds.map((id) => String(id));
+
+    if (incomingIds.length !== existingIds.length) {
+      return res.status(400).json({ error: "orderedTodoIds must include all todos" });
+    }
+
+    const existingSet = new Set(existingIds);
+    const incomingSet = new Set(incomingIds);
+
+    if (existingSet.size !== incomingSet.size) {
+      return res.status(400).json({ error: "orderedTodoIds contains duplicates or invalid ids" });
+    }
+
+    for (const todoId of incomingSet) {
+      if (!existingSet.has(todoId)) {
+        return res.status(400).json({ error: "orderedTodoIds contains invalid todo ids" });
+      }
+    }
+
+    incomingIds.forEach((todoId, index) => {
+      const todo = vault.todos.id(todoId);
+      if (todo) {
+        todo.order = index;
+      }
+    });
+
+    await vault.save();
+
+    const sortedTodos = [...vault.todos].sort((a, b) => (a.order || 0) - (b.order || 0));
+    res.json(sortedTodos);
+  } catch (error) {
+    console.error("Error reordering todos:", error);
+    res.status(500).json({ error: "Failed to reorder todos" });
+  }
+});
+
+// Update a todo in a vault
+router.put("/:vaultId/todos/:todoId", auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { title, description, priority, completed, dueDate, repeat, important } = req.body;
+    const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
+
+    if (!vault) {
+      return res.status(404).json({ error: "Vault not found" });
+    }
+
+    const todo = vault.todos.id(req.params.todoId);
+    if (!todo) {
+      return res.status(404).json({ error: "Todo not found" });
+    }
+
+    if (typeof title === "string") {
+      const normalizedTitle = title.trim();
+      if (!normalizedTitle) {
+        return res.status(400).json({ error: "Todo title is required" });
+      }
+      if (normalizedTitle.length > 200) {
+        return res.status(400).json({ error: "Todo title must be at most 200 characters" });
+      }
+      todo.title = normalizedTitle;
+    }
+
+    if (typeof description === "string") {
+      todo.description = description.trim();
+    }
+
+    if (typeof completed === "boolean") {
+      todo.completed = completed;
+    }
+
+    if (typeof priority === "string" && ["low", "medium", "high"].includes(priority)) {
+      todo.priority = priority;
+    }
+
+    if (typeof repeat === "string" && ["none", "daily", "weekly", "monthly", "yearly"].includes(repeat)) {
+      todo.repeat = repeat;
+    }
+
+    if (typeof important === "boolean") {
+      todo.important = important;
+    }
+
+    if (dueDate === null || dueDate === "") {
+      todo.dueDate = null;
+    } else if (typeof dueDate === "string") {
+      const candidate = new Date(dueDate);
+      if (Number.isNaN(candidate.getTime())) {
+        return res.status(400).json({ error: "Invalid due date" });
+      }
+      todo.dueDate = candidate;
+    }
+
+    todo.updatedAt = new Date();
+    await vault.save();
+
+    res.json(todo);
+  } catch (error) {
+    console.error("Error updating todo:", error);
+    res.status(500).json({ error: "Failed to update todo" });
+  }
+});
+
+// Delete a todo in a vault
+router.delete("/:vaultId/todos/:todoId", auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
+
+    if (!vault) {
+      return res.status(404).json({ error: "Vault not found" });
+    }
+
+    const todo = vault.todos.id(req.params.todoId);
+    if (!todo) {
+      return res.status(404).json({ error: "Todo not found" });
+    }
+
+    todo.deleteOne();
+
+    vault.todos = vault.todos
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map((item, index) => {
+        item.order = index;
+        return item;
+      });
+
+    await vault.save();
+
+    res.json({ message: "Todo deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting todo:", error);
+    res.status(500).json({ error: "Failed to delete todo" });
+  }
+});
+
+// Clear completed todos in a vault
+router.delete("/:vaultId/todos", auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
+
+    if (!vault) {
+      return res.status(404).json({ error: "Vault not found" });
+    }
+
+    const initialCount = vault.todos.length;
+    vault.todos = vault.todos.filter((todo) => !todo.completed);
+    vault.todos = vault.todos.map((todo, index) => {
+      todo.order = index;
+      return todo;
+    });
+    const removedCount = initialCount - vault.todos.length;
+
+    await vault.save();
+    res.json({ message: "Completed todos cleared", removedCount });
+  } catch (error) {
+    console.error("Error clearing completed todos:", error);
+    res.status(500).json({ error: "Failed to clear completed todos" });
   }
 });
 

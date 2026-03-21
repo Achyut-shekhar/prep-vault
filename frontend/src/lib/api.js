@@ -159,6 +159,49 @@ export const vaultApi = {
     });
   },
 
+  // Get all todos for a vault
+  getTodos: async (vaultId) => {
+    return apiRequest(`/vault/${vaultId}/todos`);
+  },
+
+  // Create a todo in a vault
+  addTodo: async (vaultId, todoData) => {
+    return apiRequest(`/vault/${vaultId}/todos`, {
+      method: "POST",
+      body: JSON.stringify(todoData),
+    });
+  },
+
+  // Update a todo in a vault
+  updateTodo: async (vaultId, todoId, todoData) => {
+    return apiRequest(`/vault/${vaultId}/todos/${todoId}`, {
+      method: "PUT",
+      body: JSON.stringify(todoData),
+    });
+  },
+
+  // Delete a todo in a vault
+  deleteTodo: async (vaultId, todoId) => {
+    return apiRequest(`/vault/${vaultId}/todos/${todoId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // Reorder todos in a vault
+  reorderTodos: async (vaultId, orderedTodoIds) => {
+    return apiRequest(`/vault/${vaultId}/todos/reorder`, {
+      method: "PATCH",
+      body: JSON.stringify({ orderedTodoIds }),
+    });
+  },
+
+  // Clear completed todos in a vault
+  clearCompletedTodos: async (vaultId) => {
+    return apiRequest(`/vault/${vaultId}/todos`, {
+      method: "DELETE",
+    });
+  },
+
   // Upload an image to a note
   uploadNoteImage: async (vaultId, noteId, formData) => {
     const token = getToken();

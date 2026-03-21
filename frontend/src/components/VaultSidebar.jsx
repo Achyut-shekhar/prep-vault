@@ -6,13 +6,33 @@ import {
   ExternalLink,
   FileText,
   Trash2,
+  Pencil,
   NotebookPen,
+  ListChecks,
   Plus,
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import NewFolderDialog from "./NewFolderDialog";
 import AddResourceDialog from "./AddResourceDialog";
 import SimpleNotepad from "./SimpleNotepad";
@@ -27,6 +47,12 @@ const VaultSidebar = () => {
   const [notes, setNotes] = useState([]);
   const [noteSearch, setNoteSearch] = useState("");
   const [editingNote, setEditingNote] = useState(null);
+  const [folderView, setFolderView] = useState("todo");
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [targetFolder, setTargetFolder] = useState(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [folderActionLoading, setFolderActionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Fetch vaults on mount
@@ -41,6 +67,7 @@ const VaultSidebar = () => {
       fetchNotes(selectedFolder);
       setEditingNote(null);
       setNoteSearch("");
+      setFolderView("todo");
     } else {
       setResources([]);
       setNotes([]);
@@ -91,6 +118,80 @@ const VaultSidebar = () => {
     } catch (error) {
       console.error("Error creating vault:", error);
       toast.error("Failed to create folder");
+    }
+  };
+
+  const openRenameDialog = (folder) => {
+    if (!folder) return;
+    setTargetFolder(folder);
+    setRenameDraft(folder.name || "");
+    setRenameDialogOpen(true);
+  };
+
+  const handleRenameFolder = async () => {
+    if (!targetFolder) return;
+
+    const trimmedName = renameDraft.trim();
+    if (!trimmedName || trimmedName === targetFolder.name) {
+      setRenameDialogOpen(false);
+      return;
+    }
+
+    try {
+      setFolderActionLoading(true);
+      const updatedFolder = await vaultApi.updateVault(targetFolder._id, {
+        name: trimmedName,
+        isPublic: targetFolder.isPublic,
+        description: targetFolder.description || "",
+      });
+
+      setFolders((prevFolders) =>
+        prevFolders.map((item) =>
+          item._id === targetFolder._id ? { ...item, ...updatedFolder } : item,
+        ),
+      );
+      toast.success("Folder renamed successfully");
+      setRenameDialogOpen(false);
+      setTargetFolder(null);
+    } catch (error) {
+      console.error("Error renaming folder:", error);
+      toast.error("Failed to rename folder");
+    } finally {
+      setFolderActionLoading(false);
+    }
+  };
+
+  const openDeleteDialog = (folder) => {
+    if (!folder) return;
+    setTargetFolder(folder);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteFolder = async () => {
+    if (!targetFolder?._id) return;
+
+    try {
+      setFolderActionLoading(true);
+      await vaultApi.deleteVault(targetFolder._id);
+      setFolders((prevFolders) =>
+        prevFolders.filter((item) => item._id !== targetFolder._id),
+      );
+
+      if (selectedFolder === targetFolder._id) {
+        setSelectedFolder(null);
+        setResources([]);
+        setNotes([]);
+        setNoteSearch("");
+      }
+
+      toast.success("Folder deleted successfully");
+      setDeleteDialogOpen(false);
+      setTargetFolder(null);
+    } catch (error) {
+      console.error("Error deleting folder:", error);
+      toast.error("Failed to delete folder");
+    } finally {
+      setFolderActionLoading(false);
     }
   };
 
@@ -262,9 +363,17 @@ const VaultSidebar = () => {
                   </p>
                 ) : (
                   folders.map((folder) => (
-                    <button
+                    <div
                       key={folder._id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedFolder(folder._id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedFolder(folder._id);
+                        }
+                      }}
                       className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left transition-colors ${
                         selectedFolder === folder._id
                           ? "bg-primary/10 text-primary"
@@ -293,12 +402,41 @@ const VaultSidebar = () => {
                           </span>
                         </div>
                       </div>
-                      <ChevronRight
-                        className={`h-4 w-4 transition-transform ${
-                          selectedFolder === folder._id ? "rotate-90" : ""
-                        }`}
-                      />
-                    </button>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openRenameDialog(folder);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openDeleteDialog(folder);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+
+                        <ChevronRight
+                          className={`h-4 w-4 transition-transform ${
+                            selectedFolder === folder._id ? "rotate-90" : ""
+                          }`}
+                        />
+                      </div>
+                    </div>
                   ))
                 )}
               </div>
@@ -314,10 +452,30 @@ const VaultSidebar = () => {
                         {resources.length} saved resources
                       </p>
                     </div>
-                    <AddResourceDialog
-                      vaultId={selectedFolder}
-                      onResourceAdded={handleResourceAdded}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openRenameDialog(selectedFolderData)}
+                      >
+                        <Pencil className="mr-1 h-4 w-4" />
+                        Edit Folder
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openDeleteDialog(selectedFolderData)}
+                      >
+                        <Trash2 className="mr-1 h-4 w-4 text-destructive" />
+                        Delete Folder
+                      </Button>
+                      <AddResourceDialog
+                        vaultId={selectedFolder}
+                        onResourceAdded={handleResourceAdded}
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-3">
@@ -371,69 +529,94 @@ const VaultSidebar = () => {
                     )}
                   </div>
 
-                  <VaultTodoList
-                    vaultId={selectedFolder}
-                    folderName={selectedFolderData?.name}
-                  />
-
                   <div className="mt-8 rounded-xl border border-border bg-background p-4">
-                    <div className="mb-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <NotebookPen className="h-5 w-5 text-primary" />
-                        <h4 className="font-semibold">Notepad</h4>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={handleCreateNote}>
-                        <Plus className="mr-1 h-4 w-4" />
-                        New Note
+                    <div className="mb-4 flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={folderView === "todo" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFolderView("todo")}
+                      >
+                        <ListChecks className="mr-2 h-4 w-4" />
+                        To-Do List
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={folderView === "notes" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFolderView("notes")}
+                      >
+                        <NotebookPen className="mr-2 h-4 w-4" />
+                        Notepad
                       </Button>
                     </div>
 
-                    <div className="relative mb-4">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        value={noteSearch}
-                        onChange={(event) => setNoteSearch(event.target.value)}
-                        placeholder="Search notes"
-                        className="pl-9"
+                    {folderView === "todo" ? (
+                      <VaultTodoList
+                        vaultId={selectedFolder}
+                        folderName={selectedFolderData?.name}
                       />
-                    </div>
-
-                    {notes.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                        No notes yet. Click “New Note” to start writing.
-                      </div>
-                    ) : filteredNotes.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                        No matching notes found.
-                      </div>
                     ) : (
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {filteredNotes.map((note) => {
-                          const plainText = getPlainTextFromHtml(note.content || "");
-                          const preview = plainText.trim()
-                            ? `${plainText.slice(0, 110)}${plainText.length > 110 ? "..." : ""}`
-                            : "Empty note";
+                      <div className="rounded-xl border border-border bg-background p-4">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <NotebookPen className="h-5 w-5 text-primary" />
+                            <h4 className="font-semibold">Notepad</h4>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={handleCreateNote}>
+                            <Plus className="mr-1 h-4 w-4" />
+                            New Note
+                          </Button>
+                        </div>
 
-                          return (
-                            <button
-                              key={note._id}
-                              onClick={() => handleOpenNote(note)}
-                              className="rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-secondary"
-                            >
-                              <div className="mb-2 flex items-center justify-between gap-2">
-                                <p className="truncate text-sm font-medium">
-                                  {note.title || "Untitled Note"}
-                                </p>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDate(note.updatedAt || note.createdAt)}
-                                </span>
-                              </div>
-                              <p className="line-clamp-3 text-xs text-muted-foreground">
-                                {preview}
-                              </p>
-                            </button>
-                          );
-                        })}
+                        <div className="relative mb-4">
+                          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            value={noteSearch}
+                            onChange={(event) => setNoteSearch(event.target.value)}
+                            placeholder="Search notes"
+                            className="pl-9"
+                          />
+                        </div>
+
+                        {notes.length === 0 ? (
+                          <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                            No notes yet. Click “New Note” to start writing.
+                          </div>
+                        ) : filteredNotes.length === 0 ? (
+                          <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                            No matching notes found.
+                          </div>
+                        ) : (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {filteredNotes.map((note) => {
+                              const plainText = getPlainTextFromHtml(note.content || "");
+                              const preview = plainText.trim()
+                                ? `${plainText.slice(0, 110)}${plainText.length > 110 ? "..." : ""}`
+                                : "Empty note";
+
+                              return (
+                                <button
+                                  key={note._id}
+                                  onClick={() => handleOpenNote(note)}
+                                  className="rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-secondary"
+                                >
+                                  <div className="mb-2 flex items-center justify-between gap-2">
+                                    <p className="truncate text-sm font-medium">
+                                      {note.title || "Untitled Note"}
+                                    </p>
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatDate(note.updatedAt || note.createdAt)}
+                                    </span>
+                                  </div>
+                                  <p className="line-clamp-3 text-xs text-muted-foreground">
+                                    {preview}
+                                  </p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -453,6 +636,86 @@ const VaultSidebar = () => {
           </div>
         </div>
       </section>
+
+      <Dialog
+        open={renameDialogOpen}
+        onOpenChange={(open) => {
+          setRenameDialogOpen(open);
+          if (!open) {
+            setTargetFolder(null);
+            setRenameDraft("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Folder Name</DialogTitle>
+            <DialogDescription>
+              Update the folder name for better organization.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Input
+            value={renameDraft}
+            onChange={(event) => setRenameDraft(event.target.value)}
+            placeholder="Folder name"
+            autoFocus
+          />
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setRenameDialogOpen(false);
+                setTargetFolder(null);
+                setRenameDraft("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleRenameFolder}
+              disabled={folderActionLoading || !renameDraft.trim()}
+            >
+              {folderActionLoading ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setTargetFolder(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Folder?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the folder
+              {targetFolder?.name ? ` “${targetFolder.name}”` : ""} and everything
+              inside it, including resources, notes, and to-do tasks. This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={folderActionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteFolder}
+              disabled={folderActionLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {folderActionLoading ? "Deleting..." : "Delete Folder"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
