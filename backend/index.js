@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
@@ -18,7 +18,7 @@ const allowedOrigins = new Set([
   "https://prepvault.in",
   "https://www.prepvault.in",
   "http://localhost:5173",
-  "http://localhost:8080",  // ✅ ADD THIS
+  "http://localhost:8080", // ✅ ADD THIS
 ]);
 
 // Include both www and non-www variants of CLIENT_URL automatically.

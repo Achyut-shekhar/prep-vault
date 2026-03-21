@@ -5,7 +5,7 @@ const connectDB = async () => {
 
   if (!mongoUri) {
     console.error(
-      "Missing MongoDB URI. Set MONGODB_URI (preferred) or MONGO_URI in environment variables."
+      "Missing MongoDB URI. Set MONGODB_URI (preferred) or MONGO_URI in environment variables.",
     );
     process.exit(1);
   }
