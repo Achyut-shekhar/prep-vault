@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const isProduction = process.env.NODE_ENV === "production";
 
 // Connect to MongoDB
 connectDB();
@@ -39,6 +40,22 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     const normalizedOrigin = origin.replace(/\/$/, "");
+
+    if (!isProduction) {
+      try {
+        const parsedOrigin = new URL(normalizedOrigin);
+        const isLocalDevHost =
+          parsedOrigin.hostname === "localhost" ||
+          parsedOrigin.hostname === "127.0.0.1";
+
+        if (isLocalDevHost) {
+          return callback(null, true);
+        }
+      } catch {
+        // Fall through to strict allowlist checks.
+      }
+    }
+
     if (
       allowedOrigins.has(normalizedOrigin) ||
       /^https:\/\/prep-vault[\w-]*\.vercel\.app$/.test(normalizedOrigin)
