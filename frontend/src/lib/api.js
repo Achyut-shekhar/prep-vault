@@ -1,9 +1,26 @@
-const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const isLocalHost =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+
+const rawApiUrl = isLocalHost
+  ? import.meta.env.VITE_LOCAL_API_URL ||
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:5000/api"
+  : import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const normalizedApiUrl = rawApiUrl.replace(/\/$/, "");
 const API_URL = normalizedApiUrl.endsWith("/api")
   ? normalizedApiUrl
   : `${normalizedApiUrl}/api`;
 const BACKEND_URL = API_URL.replace(/\/api$/, "");
+
+const parseResponse = async (response) => {
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return { data: await response.json(), isJson: true };
+  }
+
+  return { data: await response.text(), isJson: false };
+};
 
 // Get auth token from localStorage
 const getToken = () => localStorage.getItem("token");
@@ -35,7 +52,7 @@ const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    const data = await response.json();
+    const { data, isJson } = await parseResponse(response);
 
     if (!response.ok) {
       // If unauthorized, clear token and redirect to login
@@ -43,7 +60,20 @@ const apiRequest = async (endpoint, options = {}) => {
         localStorage.removeItem("token");
         window.location.href = "/login";
       }
-      throw new Error(data.message || "API request failed");
+
+      if (!isJson) {
+        throw new Error(
+          `Request failed with status ${response.status}: non-JSON response from ${url}`,
+        );
+      }
+
+      throw new Error(data.message || data.error || "API request failed");
+    }
+
+    if (!isJson) {
+      throw new Error(
+        `Expected JSON response but received non-JSON from ${url}`,
+      );
     }
 
     return data;
@@ -243,7 +273,10 @@ export const vaultApi = {
   // Build full URL for uploaded files
   getUploadUrl: (relativeUrl) => {
     if (!relativeUrl) return "";
-    if (relativeUrl.startsWith("http://") || relativeUrl.startsWith("https://")) {
+    if (
+      relativeUrl.startsWith("http://") ||
+      relativeUrl.startsWith("https://")
+    ) {
       return relativeUrl;
     }
     return `${BACKEND_URL}${relativeUrl}`;
