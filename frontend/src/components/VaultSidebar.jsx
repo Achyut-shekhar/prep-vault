@@ -53,6 +53,9 @@ const VaultSidebar = () => {
   const [targetFolder, setTargetFolder] = useState(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [folderActionLoading, setFolderActionLoading] = useState(false);
+  const [deleteResourceDialogOpen, setDeleteResourceDialogOpen] = useState(false);
+  const [targetResource, setTargetResource] = useState(null);
+  const [resourceActionLoading, setResourceActionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Fetch vaults on mount
@@ -207,23 +210,36 @@ const VaultSidebar = () => {
     );
   };
 
-  const handleDeleteResource = async (resourceId) => {
-    if (!confirm("Are you sure you want to delete this resource?")) return;
+  const openDeleteResourceDialog = (resource) => {
+    if (!resource) return;
+    setTargetResource(resource);
+    setDeleteResourceDialogOpen(true);
+  };
+
+  const handleDeleteResource = async () => {
+    if (!selectedFolder || !targetResource?._id) return;
 
     try {
-      await vaultApi.deleteResource(selectedFolder, resourceId);
-      setResources(resources.filter((r) => r._id !== resourceId));
-      setFolders(
-        folders.map((f) =>
+      setResourceActionLoading(true);
+      await vaultApi.deleteResource(selectedFolder, targetResource._id);
+      setResources((prevResources) =>
+        prevResources.filter((r) => r._id !== targetResource._id),
+      );
+      setFolders((prevFolders) =>
+        prevFolders.map((f) =>
           f._id === selectedFolder
             ? { ...f, resourceCount: f.resourceCount - 1 }
             : f,
         ),
       );
       toast.success("Resource deleted successfully");
+      setDeleteResourceDialogOpen(false);
+      setTargetResource(null);
     } catch (error) {
       console.error("Error deleting resource:", error);
       toast.error("Failed to delete resource");
+    } finally {
+      setResourceActionLoading(false);
     }
   };
 
@@ -519,7 +535,7 @@ const VaultSidebar = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDeleteResource(resource._id)}
+                              onClick={() => openDeleteResourceDialog(resource)}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -568,6 +584,10 @@ const VaultSidebar = () => {
                             New Note
                           </Button>
                         </div>
+
+                        <p className="mb-3 text-xs text-muted-foreground">
+                          Open any note and edit its title from the “Note Title” field at the top.
+                        </p>
 
                         <div className="relative mb-4">
                           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -712,6 +732,37 @@ const VaultSidebar = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {folderActionLoading ? "Deleting..." : "Delete Folder"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteResourceDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteResourceDialogOpen(open);
+          if (!open && !resourceActionLoading) {
+            setTargetResource(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Resource?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete
+              {targetResource?.title ? ` “${targetResource.title}”` : " this resource"}.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resourceActionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteResource}
+              disabled={resourceActionLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {resourceActionLoading ? "Deleting..." : "Delete Resource"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

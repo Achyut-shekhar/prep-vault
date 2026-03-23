@@ -47,6 +47,58 @@ const normalizeContentForEditor = (value) => {
     .join("");
 };
 
+const normalizeInlineFormatting = (html) => {
+  if (!html || typeof document === "undefined") return html;
+
+  const root = document.createElement("div");
+  root.innerHTML = html;
+
+  const wrapChildren = (element, tagName) => {
+    const wrapper = document.createElement(tagName);
+    while (element.firstChild) {
+      wrapper.appendChild(element.firstChild);
+    }
+    element.appendChild(wrapper);
+  };
+
+  root.querySelectorAll("b").forEach((boldNode) => {
+    const strongNode = document.createElement("strong");
+    while (boldNode.firstChild) {
+      strongNode.appendChild(boldNode.firstChild);
+    }
+    boldNode.replaceWith(strongNode);
+  });
+
+  root.querySelectorAll("i").forEach((italicNode) => {
+    const emNode = document.createElement("em");
+    while (italicNode.firstChild) {
+      emNode.appendChild(italicNode.firstChild);
+    }
+    italicNode.replaceWith(emNode);
+  });
+
+  root.querySelectorAll("span[style]").forEach((span) => {
+    const style = (span.getAttribute("style") || "").toLowerCase();
+    const hasBold = /font-weight\s*:\s*(bold|[6-9]00)/.test(style);
+    const hasItalic = /font-style\s*:\s*italic/.test(style);
+    const hasUnderline =
+      /text-decoration[^;]*underline/.test(style) ||
+      /text-decoration-line\s*:\s*underline/.test(style);
+
+    if (hasBold) wrapChildren(span, "strong");
+    if (hasItalic) wrapChildren(span, "em");
+    if (hasUnderline) wrapChildren(span, "u");
+
+    span.removeAttribute("style");
+
+    if (!span.attributes.length) {
+      span.replaceWith(...span.childNodes);
+    }
+  });
+
+  return root.innerHTML;
+};
+
 const placeCaretAtEnd = (element) => {
   const selection = window.getSelection();
   if (!selection || !element) return;
@@ -80,6 +132,65 @@ const getCommandValue = (command) => {
   } catch {
     return "";
   }
+};
+
+const INLINE_COMMAND_TAGS = {
+  bold: new Set(["b", "strong"]),
+  italic: new Set(["i", "em"]),
+  underline: new Set(["u"]),
+};
+const INLINE_COMMANDS = ["bold", "italic", "underline"];
+
+const getInlineCommandStates = () =>
+  INLINE_COMMANDS.reduce((accumulator, inlineCommand) => {
+    accumulator[inlineCommand] = getCommandState(inlineCommand);
+    return accumulator;
+  }, {});
+
+const ensureInlineCommandStates = (desiredStates) => {
+  INLINE_COMMANDS.forEach((inlineCommand) => {
+    const desired = !!desiredStates?.[inlineCommand];
+    const current = getCommandState(inlineCommand);
+
+    if (current !== desired) {
+      document.execCommand(inlineCommand, false, null);
+    }
+  });
+};
+
+const hasInlineFormattingStyle = (element, command) => {
+  if (!element || element.nodeType !== Node.ELEMENT_NODE) return false;
+
+  const style = (element.getAttribute("style") || "").toLowerCase();
+  if (!style) return false;
+
+  if (command === "underline") {
+    return (
+      /text-decoration[^;]*underline/.test(style) ||
+      /text-decoration-line\s*:\s*underline/.test(style)
+    );
+  }
+
+  if (command === "italic") {
+    return /font-style\s*:\s*italic/.test(style);
+  }
+
+  if (command === "bold") {
+    return /font-weight\s*:\s*(bold|[6-9]00)/.test(style);
+  }
+
+  return false;
+};
+
+const isFormattingAncestorForCommand = (element, command) => {
+  if (!element || element.nodeType !== Node.ELEMENT_NODE) return false;
+
+  const tagName = element.tagName.toLowerCase();
+  if (INLINE_COMMAND_TAGS[command]?.has(tagName)) {
+    return true;
+  }
+
+  return hasInlineFormattingStyle(element, command);
 };
 
 const ToolbarButton = ({
@@ -238,13 +349,14 @@ const SimpleNotepad = ({
 
     try {
       setSaving(true);
+      const normalizedBeforeSave = normalizeInlineFormatting(editorHtml);
       const updatedNote = await vaultApi.updateNote(vaultId, note._id, {
         title: title.trim() || "Untitled Note",
-        content: editorHtml,
+        content: normalizedBeforeSave,
       });
 
       const normalized = normalizeContentForEditor(
-        updatedNote.content || editorHtml,
+        updatedNote.content || normalizedBeforeSave,
       );
 
       setEditorHtml((prev) => (prev === normalized ? prev : normalized));
@@ -372,7 +484,74 @@ const SimpleNotepad = ({
     (command, value = null) => {
       if (!editorRef.current) return;
 
+      const isInlineCommand = INLINE_COMMANDS.includes(command);
+      const selectionBefore = window.getSelection();
+      const fallbackRange = selectionRangeRef.current;
+      const rangeBefore = selectionBefore?.rangeCount
+        ? selectionBefore.getRangeAt(0)
+        : fallbackRange;
+      const wasCollapsedSelection = !!rangeBefore?.collapsed;
+      const inlineStatesBefore =
+        isInlineCommand && wasCollapsedSelection ? getInlineCommandStates() : null;
+
       restoreSelection();
+      document.execCommand("styleWithCSS", false, false);
+
+      if (isInlineCommand && wasCollapsedSelection) {
+        const desiredInlineStates = {
+          ...(inlineStatesBefore || {}),
+          [command]: !(inlineStatesBefore?.[command] || false),
+        };
+
+        const editor = editorRef.current;
+        const selection = window.getSelection();
+
+        if (editor && selection && selection.rangeCount > 0 && !desiredInlineStates[command]) {
+          const range = selection.getRangeAt(0);
+          if (range.collapsed) {
+            let currentNode =
+              range.startContainer.nodeType === Node.TEXT_NODE
+                ? range.startContainer.parentElement
+                : range.startContainer;
+
+            while (currentNode && currentNode !== editor) {
+              if (
+                currentNode.nodeType === Node.ELEMENT_NODE &&
+                isFormattingAncestorForCommand(currentNode, command)
+              ) {
+                if (!currentNode.nextSibling) {
+                  currentNode.parentNode?.insertBefore(
+                    document.createTextNode("\u200B"),
+                    currentNode.nextSibling,
+                  );
+                }
+
+                const nextRange = document.createRange();
+                nextRange.setStartAfter(currentNode);
+                nextRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(nextRange);
+                selectionRangeRef.current = nextRange.cloneRange();
+                break;
+              }
+
+              currentNode = currentNode.parentElement;
+            }
+          }
+        }
+
+        document.execCommand("styleWithCSS", false, false);
+        document.execCommand("removeFormat", false, null);
+        ensureInlineCommandStates(desiredInlineStates);
+
+        requestAnimationFrame(() => {
+          syncEditorState();
+          captureSelection();
+          refreshToolbarState();
+        });
+        return;
+      }
+
       document.execCommand(command, false, value);
 
       requestAnimationFrame(() => {
@@ -540,11 +719,15 @@ const SimpleNotepad = ({
                 {folderName ? <span>• {folderName}</span> : null}
               </div>
 
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Note Title
+              </p>
+
               <Input
                 value={title}
                 onChange={handleTitleChange}
-                placeholder="Untitled Note"
-                className="h-10 border-none bg-transparent px-0 text-lg font-semibold shadow-none focus-visible:ring-0"
+                placeholder="Enter note title"
+                className="h-10 border border-border/70 bg-background px-3 text-base font-semibold shadow-none focus-visible:ring-1"
               />
             </div>
 
