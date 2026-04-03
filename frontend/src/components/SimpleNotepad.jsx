@@ -704,30 +704,30 @@ const SimpleNotepad = ({
   }, [saving, hasUnsavedChanges, lastSavedAt]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm">
-      <div className="mx-2 my-2 flex h-[calc(100vh-1rem)] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
-        <div className="border-b border-border bg-card/95">
-          <div className="container mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3">
-            <Button variant="ghost" size="icon" onClick={handleClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-md transition-all duration-300">
+      <div className="mx-4 my-4 flex h-[calc(100vh-2rem)] w-full max-w-[1400px] flex-col overflow-hidden rounded-[2.5rem] border border-border/40 bg-gradient-to-b from-background to-background/95 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] ring-1 ring-black/5 dark:bg-zinc-950/90 dark:ring-white/10 relative">
+        <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
+          <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-primary/20 to-accent/20 opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" />
+        </div>
+
+        <div className="z-10 border-b border-border/20 bg-card/60 backdrop-blur-2xl">
+          <div className="container mx-auto flex w-full max-w-7xl items-center gap-4 px-6 py-4">
+            <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full hover:bg-muted/50 transition-colors h-10 w-10 shrink-0">
               <X className="h-5 w-5" />
             </Button>
 
-            <div className="min-w-0 flex-1">
-              <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="min-w-0 flex-1 pl-2">
+              <div className="mb-0.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary/70">
                 <NotebookPen className="h-3.5 w-3.5" />
                 <span>My Study Vault</span>
                 {folderName ? <span>• {folderName}</span> : null}
               </div>
 
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Note Title
-              </p>
-
               <Input
                 value={title}
                 onChange={handleTitleChange}
-                placeholder="Enter note title"
-                className="h-10 border border-border/70 bg-background px-3 text-base font-semibold shadow-none focus-visible:ring-1"
+                placeholder="Untitled Note..."
+                className="h-12 border-0 bg-transparent px-0 text-xl md:text-3xl font-extrabold tracking-tight shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/30 text-foreground transition-all"
               />
             </div>
 
@@ -741,7 +741,8 @@ const SimpleNotepad = ({
 
             <Button
               variant="outline"
-              size="sm"
+              size="default"
+              className="rounded-xl border-border/50 bg-background/50 backdrop-blur-sm font-medium hover:bg-muted"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => imageInputRef.current?.click()}
               disabled={uploadingImage}
@@ -750,12 +751,12 @@ const SimpleNotepad = ({
               {uploadingImage ? "Uploading..." : "Add Image"}
             </Button>
 
-            <Button variant="ghost" size="sm" onClick={handleDeleteNote}>
-              <Trash2 className="mr-1 h-4 w-4 text-destructive" />
+            <Button variant="ghost" size="default" className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors shrink-0" onClick={handleDeleteNote}>
+              <Trash2 className="mr-2 h-4 w-4" />
               Delete
             </Button>
 
-            <Button size="sm" onClick={handleSave} disabled={saving}>
+            <Button size="default" onClick={handleSave} disabled={saving} className="rounded-xl font-semibold shadow-md shrink-0">
               <Save className="mr-1 h-4 w-4" />
               {saving ? "Saving..." : "Save"}
             </Button>
@@ -827,13 +828,13 @@ const SimpleNotepad = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-muted/20">
-          <div className="container mx-auto w-full max-w-5xl px-4 py-6">
-            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-br from-muted/10 via-background to-muted/20">
+          <div className="container mx-auto w-full max-w-5xl px-4 py-8 md:py-12">
+            <div className="rounded-[2.5rem] border border-border/30 bg-card/80 p-6 md:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-500 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
               <div className="relative">
                 {plainText.trim().length === 0 && (
-                  <p className="pointer-events-none absolute left-0 top-0 text-base text-muted-foreground/80">
-                    Start writing your note...
+                  <p className="pointer-events-none absolute left-0 top-0 text-lg md:text-xl text-muted-foreground/30 font-medium">
+                    Start writing your masterpiece...
                   </p>
                 )}
 
@@ -850,7 +851,7 @@ const SimpleNotepad = ({
                   onMouseUp={captureSelection}
                   onBlur={captureSelection}
                   onFocus={captureSelection}
-                  className="min-h-[60vh] text-base leading-7 outline-none focus:outline-none [&_blockquote]:my-3 [&_blockquote]:border-l-2 [&_blockquote]:border-primary/50 [&_blockquote]:pl-3 [&_h1]:my-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:my-3 [&_h2]:text-xl [&_h2]:font-semibold [&_img]:my-3 [&_img]:max-h-80 [&_img]:w-auto [&_img]:max-w-full [&_img]:rounded-lg [&_img]:border [&_img]:border-border [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6"
+                  className="min-h-[60vh] text-lg text-foreground/90 leading-[1.8] outline-none focus:outline-none [&_blockquote]:my-6 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/40 [&_blockquote]:pl-5 [&_blockquote]:italic [&_blockquote]:text-muted-foreground/90 [&_blockquote]:bg-primary/[0.02] [&_blockquote]:py-2 [&_blockquote]:pr-4 [&_blockquote]:rounded-r-xl [&_h1]:my-8 [&_h1]:text-4xl [&_h1]:md:text-5xl [&_h1]:font-extrabold [&_h1]:tracking-tight [&_h2]:my-6 [&_h2]:text-2xl [&_h2]:md:text-3xl [&_h2]:font-bold [&_h2]:tracking-tight [&_img]:my-8 [&_img]:max-h-[32rem] [&_img]:w-auto [&_img]:max-w-full [&_img]:rounded-[1.5rem] [&_img]:border [&_img]:border-border/30 [&_img]:shadow-xl [&_img]:transition-transform [&_img]:hover:scale-[1.01] [&_img]:duration-500 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:pl-8 [&_ul]:my-5 [&_ul]:list-disc [&_ul]:pl-8 [&_p]:my-4"
                 />
               </div>
             </div>
@@ -861,12 +862,15 @@ const SimpleNotepad = ({
           </div>
         </div>
 
-        <div className="border-t border-border bg-card/95">
-          <div className="container mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-2 text-xs text-muted-foreground">
+        <div className="z-10 border-t border-border/20 bg-card/60 backdrop-blur-2xl">
+          <div className="container mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3 text-xs font-medium text-muted-foreground/80 tracking-wide uppercase">
             <span>
               {wordCount} words • {plainText.length} characters • {images.length} image(s)
             </span>
-            <span>{saveStatusText}</span>
+            <span className="flex items-center gap-2">
+              {saving ? <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> : null}
+              {saveStatusText}
+            </span>
           </div>
         </div>
       </div>

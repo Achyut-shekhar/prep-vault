@@ -84,46 +84,66 @@ const formatToday = () =>
   });
 
 const TodoRow = ({ todo, onToggle, onToggleImportant, onEdit, onDelete }) => {
+  const getPriorityClasses = (priority) => {
+    switch (priority) {
+      case "high":
+        return "bg-rose-500/10 text-rose-600 border border-rose-500/20 hover:bg-rose-500/20";
+      case "low":
+        return "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20";
+      default:
+        return "bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/20";
+    }
+  };
+
   return (
     <div
-      className={`group flex items-start gap-3 rounded-xl border px-3 py-3 transition-colors ${
+      className={`group relative flex items-start gap-3.5 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${
         todo.completed
-          ? "border-border bg-muted/40"
-          : "border-border bg-card hover:bg-muted/30"
+          ? "border-border/50 bg-muted/30 opacity-75"
+          : todo.important
+            ? "border-primary/40 bg-primary/[0.04] shadow-sm shadow-primary/5"
+            : "border-border bg-card"
       }`}
     >
-      <Checkbox
-        checked={todo.completed}
-        onCheckedChange={(checked) => onToggle(todo._id, checked)}
-        className="mt-0.5"
-      />
+      <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br from-white/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-white/5" />
+      
+      <div className="mt-0.5 relative flex items-center justify-center">
+        <Checkbox
+          checked={todo.completed}
+          onCheckedChange={(checked) => onToggle(todo._id, checked)}
+          className={`h-5 w-5 rounded-full transition-all duration-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-white data-[state=checked]:border-none`}
+        />
+        {todo.completed && (
+          <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-20 duration-1000" />
+        )}
+      </div>
 
       <div className="min-w-0 flex-1">
         <p
-          className={`text-sm ${
+          className={`text-[15px] transition-all duration-300 ${
             todo.completed
               ? "text-muted-foreground line-through"
-              : "font-medium text-foreground"
+              : "font-semibold text-foreground"
           }`}
         >
           {todo.title}
         </p>
 
         {todo.description && (
-          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+          <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground/80 leading-relaxed">
             {todo.description}
           </p>
         )}
 
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Badge variant="secondary" className="text-xs font-medium">
-            <Flag className="mr-1 h-3 w-3" />
+        <div className="mt-3 flex flex-wrap items-center gap-2.5">
+          <Badge variant="outline" className={`text-xs font-semibold px-2 py-0.5 rounded-md transition-colors ${getPriorityClasses(todo.priority)}`}>
+            <Flag className="mr-1.5 h-3 w-3" />
             {getPriorityLabel(todo.priority)}
           </Badge>
 
           {todo.repeat && todo.repeat !== "none" && (
-            <Badge variant="outline" className="text-xs">
-              <Repeat className="mr-1 h-3 w-3" />
+            <Badge variant="outline" className="text-xs text-muted-foreground border-border/60 bg-muted/30 hover:bg-muted/50 rounded-md">
+              <Repeat className="mr-1.5 h-3 w-3 text-primary/70" />
               {getRepeatLabel(todo.repeat)}
             </Badge>
           )}
@@ -131,13 +151,13 @@ const TodoRow = ({ todo, onToggle, onToggleImportant, onEdit, onDelete }) => {
           {todo.dueDate && (
             <Badge
               variant="outline"
-              className={`text-xs ${
+              className={`text-xs rounded-md ${
                 isOverdue(todo.dueDate, todo.completed)
-                  ? "border-destructive/40 text-destructive"
-                  : ""
+                  ? "border-destructive/30 bg-destructive/10 text-destructive font-medium"
+                  : "border-border/60 bg-muted/30 text-muted-foreground hover:bg-muted/50"
               }`}
             >
-              <Calendar className="mr-1 h-3 w-3" />
+              <Calendar className="mr-1.5 h-3 w-3" />
               {formatDueDate(todo.dueDate)}
               {isOverdue(todo.dueDate, todo.completed) ? " (Overdue)" : ""}
             </Badge>
@@ -145,26 +165,26 @@ const TodoRow = ({ todo, onToggle, onToggleImportant, onEdit, onDelete }) => {
         </div>
       </div>
 
-      <div className="flex shrink-0 gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100">
+      <div className="flex shrink-0 gap-1 rounded-xl bg-background/80 p-1 shadow-sm opacity-100 backdrop-blur-sm transition-opacity duration-200 md:opacity-0 md:group-hover:opacity-100 border border-border/50">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className={`h-8 w-8 ${
+          className={`h-8 w-8 rounded-lg transition-colors ${
             todo.important
-              ? "text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+              : "text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10"
           }`}
           onClick={() => onToggleImportant(todo)}
         >
-          <Star className={`h-4 w-4 ${todo.important ? "fill-current" : ""}`} />
+          <Star className={`h-4 w-4 ${todo.important ? "fill-amber-500 drop-shadow-md" : ""}`} />
         </Button>
 
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          className="h-8 w-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
           onClick={() => onEdit(todo)}
         >
           <Edit2 className="h-4 w-4" />
@@ -174,7 +194,7 @@ const TodoRow = ({ todo, onToggle, onToggleImportant, onEdit, onDelete }) => {
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          className="h-8 w-8 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
           onClick={() => onDelete(todo._id)}
         >
           <Trash2 className="h-4 w-4" />
@@ -413,35 +433,38 @@ const VaultTodoList = ({ vaultId, folderName }) => {
   if (!folderKey) return null;
 
   return (
-    <div className="mt-8 rounded-2xl border border-border bg-background p-4 md:p-5">
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <div className="mt-8 rounded-3xl border border-border/60 bg-gradient-to-b from-card/80 to-card p-5 md:p-8 shadow-sm backdrop-blur-xl">
+      <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <ClipboardList className="h-3.5 w-3.5" />
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary shadow-sm">
+            <ClipboardList className="h-4 w-4" />
             My Tasks
           </div>
-          <h4 className="text-lg font-semibold">{folderName || "This list"}</h4>
-          <p className="text-sm text-muted-foreground">{formatToday()}</p>
+          <h4 className="text-2xl font-bold tracking-tight text-foreground">{folderName || "This list"}</h4>
+          <p className="mt-1 text-sm font-medium text-muted-foreground/80">{formatToday()}</p>
         </div>
 
-        <div className="rounded-xl bg-muted px-3 py-2 text-right">
-          <p className="text-xs text-muted-foreground">Tasks left</p>
-          <p className="text-base font-semibold">{activeCount}</p>
+        <div className="rounded-2xl border border-border/50 bg-background/50 px-5 py-3 text-right shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] backdrop-blur-sm">
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Tasks left</p>
+          <p className="mt-1 text-3xl font-extrabold text-primary">{activeCount}</p>
         </div>
       </div>
 
-      <form onSubmit={handleAddTodo} className="mb-4">
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2">
-          <Plus className="ml-2 h-4 w-4 text-muted-foreground" />
+      <form onSubmit={handleAddTodo} className="mb-6 relative group">
+        <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-primary/30 to-accent/30 opacity-0 blur transition duration-500 group-hover:opacity-100" />
+        <div className="relative flex items-center gap-3 rounded-2xl border border-border/80 bg-background px-4 py-2 shadow-sm transition duration-300 focus-within:ring-2 focus-within:ring-primary/20">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Plus className="h-4 w-4" />
+          </div>
           <Input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder="Add a task"
-            className="h-10 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
+            placeholder="Add a new task..."
+            className="h-12 border-0 bg-transparent px-1 text-base placeholder:text-muted-foreground/60 shadow-none focus-visible:ring-0"
             disabled={isSaving || isLoading}
           />
-          <Button type="submit" size="sm" disabled={isSaving || isLoading || !draft.trim()}>
-            {isSaving ? "Adding..." : "Add"}
+          <Button type="submit" size="default" className="rounded-xl font-medium shadow-md transition-all hover:-translate-y-0.5" disabled={isSaving || isLoading || !draft.trim()}>
+            {isSaving ? "Adding..." : "Add Task"}
           </Button>
         </div>
       </form>

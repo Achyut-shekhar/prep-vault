@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -47,7 +48,7 @@ const VaultSidebar = () => {
   const [notes, setNotes] = useState([]);
   const [noteSearch, setNoteSearch] = useState("");
   const [editingNote, setEditingNote] = useState(null);
-  const [folderView, setFolderView] = useState("todo");
+  const [folderView, setFolderView] = useState("resources");
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [targetFolder, setTargetFolder] = useState(null);
@@ -70,7 +71,7 @@ const VaultSidebar = () => {
       fetchNotes(selectedFolder);
       setEditingNote(null);
       setNoteSearch("");
-      setFolderView("todo");
+      setFolderView("resources");
     } else {
       setResources([]);
       setNotes([]);
@@ -494,85 +495,83 @@ const VaultSidebar = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {resources.length === 0 ? (
-                      <div className="py-8 text-center text-muted-foreground">
-                        <FileText className="mx-auto mb-2 h-8 w-8 opacity-50" />
-                        <p>No resources yet. Add one to get started!</p>
-                      </div>
-                    ) : (
-                      resources.map((resource) => (
-                        <div
-                          key={resource._id}
-                          className="flex items-center justify-between rounded-lg border border-border bg-background p-4"
-                        >
-                          <div className="flex min-w-0 flex-1 items-center gap-3">
-                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                              {getResourceIcon(resource.type)}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate font-medium">{resource.title}</p>
-                              <p className="truncate text-sm text-muted-foreground">
-                                {resource.type === "link"
-                                  ? new URL(resource.url).hostname
-                                  : resource.fileName}
-                              </p>
-                              {resource.description && (
-                                <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                                  {resource.description}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex flex-shrink-0 gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenResource(resource)}
-                            >
-                              {resource.type === "link" ? "Open" : "Download"}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openDeleteResourceDialog(resource)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="mt-8 rounded-xl border border-border bg-background p-4">
-                    <div className="mb-4 flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant={folderView === "todo" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setFolderView("todo")}
-                      >
+                  <Tabs value={folderView} onValueChange={setFolderView} className="mt-6 w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="resources">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Resources
+                      </TabsTrigger>
+                      <TabsTrigger value="todo">
                         <ListChecks className="mr-2 h-4 w-4" />
                         To-Do List
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={folderView === "notes" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setFolderView("notes")}
-                      >
+                      </TabsTrigger>
+                      <TabsTrigger value="notes">
                         <NotebookPen className="mr-2 h-4 w-4" />
                         Notepad
-                      </Button>
-                    </div>
+                      </TabsTrigger>
+                    </TabsList>
 
-                    {folderView === "todo" ? (
+                    <TabsContent value="resources" className="mt-4 focus-visible:outline-none focus-visible:ring-0">
+                      <div className="space-y-3">
+                        {resources.length === 0 ? (
+                          <div className="py-8 text-center text-muted-foreground">
+                            <FileText className="mx-auto mb-2 h-8 w-8 opacity-50" />
+                            <p>No resources yet. Add one to get started!</p>
+                          </div>
+                        ) : (
+                          resources.map((resource) => (
+                            <div
+                              key={resource._id}
+                              className="flex items-center justify-between rounded-lg border border-border bg-background p-4"
+                            >
+                              <div className="flex min-w-0 flex-1 items-center gap-3">
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                                  {getResourceIcon(resource.type)}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate font-medium">{resource.title}</p>
+                                  <p className="truncate text-sm text-muted-foreground">
+                                    {resource.type === "link"
+                                      ? new URL(resource.url).hostname
+                                      : resource.fileName}
+                                  </p>
+                                  {resource.description && (
+                                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                                      {resource.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-shrink-0 gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleOpenResource(resource)}
+                                >
+                                  {resource.type === "link" ? "Open" : "Download"}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openDeleteResourceDialog(resource)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="todo" className="mt-4 focus-visible:outline-none focus-visible:ring-0">
                       <VaultTodoList
                         vaultId={selectedFolder}
                         folderName={selectedFolderData?.name}
                       />
-                    ) : (
+                    </TabsContent>
+
+                    <TabsContent value="notes" className="mt-4 focus-visible:outline-none focus-visible:ring-0">
                       <div className="rounded-xl border border-border bg-background p-4">
                         <div className="mb-4 flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -638,8 +637,8 @@ const VaultSidebar = () => {
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               ) : (
                 <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-card/50 p-12">
