@@ -20,7 +20,7 @@ const allowedOrigins = new Set([
   "https://www.prepvault.in",
   "http://localhost:5173",
   "http://localhost:8080",
-  "http://localhost:8081", // ✅ ADD THIS
+  "http://localhost:8081", // anshika system 
 ]);
 
 // Include both www and non-www variants of CLIENT_URL automatically.
