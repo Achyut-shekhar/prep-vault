@@ -90,6 +90,11 @@ export const vaultApi = {
     return apiRequest("/vault");
   },
 
+  // Get a public vault by share link
+  getPublicVault: async (vaultId) => {
+    return apiRequest(`/vault/public/${vaultId}`);
+  },
+
   // Create a new vault
   createVault: async (vaultData) => {
     return apiRequest("/vault", {

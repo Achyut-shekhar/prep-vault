@@ -11,6 +11,7 @@ import {
   ListChecks,
   Plus,
   Search,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +55,8 @@ const VaultSidebar = () => {
   const [targetFolder, setTargetFolder] = useState(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [folderActionLoading, setFolderActionLoading] = useState(false);
-  const [deleteResourceDialogOpen, setDeleteResourceDialogOpen] = useState(false);
+  const [deleteResourceDialogOpen, setDeleteResourceDialogOpen] =
+    useState(false);
   const [targetResource, setTargetResource] = useState(null);
   const [resourceActionLoading, setResourceActionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -126,6 +128,20 @@ const VaultSidebar = () => {
     } catch (error) {
       console.error("Error creating vault:", error);
       toast.error("Failed to create folder");
+    }
+  };
+
+  const handleCopyShareLink = async (folder) => {
+    if (!folder?.isPublic || !folder?._id) return;
+
+    const shareUrl = `${window.location.origin}/share/${folder._id}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied to clipboard");
+    } catch (error) {
+      console.error("Error copying share link:", error);
+      toast.error("Failed to copy share link");
     }
   };
 
@@ -369,7 +385,9 @@ const VaultSidebar = () => {
     return titleText.includes(searchText) || contentText.includes(searchText);
   });
 
-  const selectedFolderData = folders.find((folder) => folder._id === selectedFolder);
+  const selectedFolderData = folders.find(
+    (folder) => folder._id === selectedFolder,
+  );
 
   const formatDate = (value) => {
     if (!value) return "";
@@ -513,12 +531,27 @@ const VaultSidebar = () => {
                 <div className="rounded-xl border border-border bg-card p-6">
                   <div className="mb-6 flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold">{selectedFolderData?.name}</h3>
+                      <h3 className="text-lg font-semibold">
+                        {selectedFolderData?.name}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
                         {resources.length} saved resources
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
+                      {selectedFolderData?.isPublic && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleCopyShareLink(selectedFolderData)
+                          }
+                        >
+                          <Copy className="mr-1 h-4 w-4" />
+                          Copy Share Link
+                        </Button>
+                      )}
                       <Button
                         type="button"
                         variant="outline"
@@ -544,7 +577,11 @@ const VaultSidebar = () => {
                     </div>
                   </div>
 
-                  <Tabs value={folderView} onValueChange={setFolderView} className="mt-6 w-full">
+                  <Tabs
+                    value={folderView}
+                    onValueChange={setFolderView}
+                    className="mt-6 w-full"
+                  >
                     <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="resources">
                         <FileText className="mr-2 h-4 w-4" />
@@ -560,7 +597,10 @@ const VaultSidebar = () => {
                       </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="resources" className="mt-4 focus-visible:outline-none focus-visible:ring-0">
+                    <TabsContent
+                      value="resources"
+                      className="mt-4 focus-visible:outline-none focus-visible:ring-0"
+                    >
                       <div className="space-y-3">
                         {resources.length === 0 ? (
                           <div className="py-8 text-center text-muted-foreground">
@@ -578,7 +618,9 @@ const VaultSidebar = () => {
                                   {getResourceIcon(resource.type)}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="truncate font-medium">{resource.title}</p>
+                                  <p className="truncate font-medium">
+                                    {resource.title}
+                                  </p>
                                   <p className="truncate text-sm text-muted-foreground">
                                     {resource.type === "link"
                                       ? new URL(resource.url).hostname
@@ -597,12 +639,16 @@ const VaultSidebar = () => {
                                   size="sm"
                                   onClick={() => handleOpenResource(resource)}
                                 >
-                                  {resource.type === "link" ? "Open" : "Download"}
+                                  {resource.type === "link"
+                                    ? "Open"
+                                    : "Download"}
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => openDeleteResourceDialog(resource)}
+                                  onClick={() =>
+                                    openDeleteResourceDialog(resource)
+                                  }
                                 >
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
@@ -613,19 +659,28 @@ const VaultSidebar = () => {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="todo" className="mt-4 focus-visible:outline-none focus-visible:ring-0">
+                    <TabsContent
+                      value="todo"
+                      className="mt-4 focus-visible:outline-none focus-visible:ring-0"
+                    >
                       <VaultTodoList
                         vaultId={selectedFolder}
                         folderName={selectedFolderData?.name}
                       />
                     </TabsContent>
 
-                    <TabsContent value="notes" className="mt-4 focus-visible:outline-none focus-visible:ring-0">
+                    <TabsContent
+                      value="notes"
+                      className="mt-4 focus-visible:outline-none focus-visible:ring-0"
+                    >
                       <div className="rounded-xl border border-border bg-background p-4">
                         <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
-                          <p className="text-sm font-medium">AI Notes from Article</p>
+                          <p className="text-sm font-medium">
+                            AI Notes from Article
+                          </p>
                           <p className="mb-2 text-xs text-muted-foreground">
-                            Paste a public article URL to generate and auto-save notes in this folder.
+                            Paste a public article URL to generate and auto-save
+                            notes in this folder.
                           </p>
                           <div className="mb-2 grid gap-2 sm:grid-cols-2">
                             <div>
@@ -634,7 +689,9 @@ const VaultSidebar = () => {
                               </label>
                               <select
                                 value={noteStyle}
-                                onChange={(event) => setNoteStyle(event.target.value)}
+                                onChange={(event) =>
+                                  setNoteStyle(event.target.value)
+                                }
                                 disabled={generatingAiNote}
                                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                               >
@@ -648,7 +705,9 @@ const VaultSidebar = () => {
                               <input
                                 type="checkbox"
                                 checked={createTodosFromAi}
-                                onChange={(event) => setCreateTodosFromAi(event.target.checked)}
+                                onChange={(event) =>
+                                  setCreateTodosFromAi(event.target.checked)
+                                }
                                 disabled={generatingAiNote}
                               />
                               Create folder to-dos from action items
@@ -658,7 +717,9 @@ const VaultSidebar = () => {
                           <div className="flex flex-col gap-2 sm:flex-row">
                             <Input
                               value={articleUrl}
-                              onChange={(event) => setArticleUrl(event.target.value)}
+                              onChange={(event) =>
+                                setArticleUrl(event.target.value)
+                              }
                               placeholder="https://example.com/article"
                               disabled={generatingAiNote}
                             />
@@ -667,7 +728,9 @@ const VaultSidebar = () => {
                               onClick={handleGenerateAiNote}
                               disabled={generatingAiNote || !articleUrl.trim()}
                             >
-                              {generatingAiNote ? "Generating..." : "Generate + Save"}
+                              {generatingAiNote
+                                ? "Generating..."
+                                : "Generate + Save"}
                             </Button>
                           </div>
                         </div>
@@ -677,21 +740,28 @@ const VaultSidebar = () => {
                             <NotebookPen className="h-5 w-5 text-primary" />
                             <h4 className="font-semibold">Notepad</h4>
                           </div>
-                          <Button variant="outline" size="sm" onClick={handleCreateNote}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCreateNote}
+                          >
                             <Plus className="mr-1 h-4 w-4" />
                             New Note
                           </Button>
                         </div>
 
                         <p className="mb-3 text-xs text-muted-foreground">
-                          Open any note and edit its title from the “Note Title” field at the top.
+                          Open any note and edit its title from the “Note Title”
+                          field at the top.
                         </p>
 
                         <div className="relative mb-4">
                           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
                             value={noteSearch}
-                            onChange={(event) => setNoteSearch(event.target.value)}
+                            onChange={(event) =>
+                              setNoteSearch(event.target.value)
+                            }
                             placeholder="Search notes"
                             className="pl-9"
                           />
@@ -708,7 +778,9 @@ const VaultSidebar = () => {
                         ) : (
                           <div className="grid gap-3 sm:grid-cols-2">
                             {filteredNotes.map((note) => {
-                              const plainText = getPlainTextFromHtml(note.content || "");
+                              const plainText = getPlainTextFromHtml(
+                                note.content || "",
+                              );
                               const preview = plainText.trim()
                                 ? `${plainText.slice(0, 110)}${plainText.length > 110 ? "..." : ""}`
                                 : "Empty note";
@@ -724,7 +796,9 @@ const VaultSidebar = () => {
                                       {note.title || "Untitled Note"}
                                     </p>
                                     <span className="text-xs text-muted-foreground">
-                                      {formatDate(note.updatedAt || note.createdAt)}
+                                      {formatDate(
+                                        note.updatedAt || note.createdAt,
+                                      )}
                                     </span>
                                   </div>
                                   <p className="line-clamp-3 text-xs text-muted-foreground">
@@ -817,13 +891,15 @@ const VaultSidebar = () => {
             <AlertDialogTitle>Delete Folder?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete the folder
-              {targetFolder?.name ? ` “${targetFolder.name}”` : ""} and everything
-              inside it, including resources, notes, and to-do tasks. This action
-              cannot be undone.
+              {targetFolder?.name ? ` “${targetFolder.name}”` : ""} and
+              everything inside it, including resources, notes, and to-do tasks.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={folderActionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={folderActionLoading}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteFolder}
               disabled={folderActionLoading}
@@ -849,12 +925,16 @@ const VaultSidebar = () => {
             <AlertDialogTitle>Delete Resource?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete
-              {targetResource?.title ? ` “${targetResource.title}”` : " this resource"}.
-              This action cannot be undone.
+              {targetResource?.title
+                ? ` “${targetResource.title}”`
+                : " this resource"}
+              . This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={resourceActionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={resourceActionLoading}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteResource}
               disabled={resourceActionLoading}

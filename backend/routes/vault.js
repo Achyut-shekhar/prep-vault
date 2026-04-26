@@ -73,6 +73,39 @@ const uploadNoteImage = multer({
   },
 });
 
+// Get a public vault and its resources by share link
+router.get("/public/:vaultId", async (req, res) => {
+  try {
+    const vault = await Vault.findById(req.params.vaultId);
+
+    if (!vault) {
+      return res.status(404).json({ error: "Vault not found" });
+    }
+
+    if (!vault.isPublic) {
+      return res.status(403).json({ error: "This vault is private" });
+    }
+
+    const resources = await Resource.find({ vaultId: req.params.vaultId }).sort(
+      { createdAt: -1 },
+    );
+
+    res.json({
+      vault: {
+        _id: vault._id,
+        name: vault.name,
+        description: vault.description || "",
+        isPublic: vault.isPublic,
+        resourceCount: vault.resourceCount || resources.length,
+      },
+      resources,
+    });
+  } catch (error) {
+    console.error("Error fetching public vault:", error);
+    res.status(500).json({ error: "Failed to fetch public vault" });
+  }
+});
+
 // Get all vaults for a user
 router.get("/", auth, async (req, res) => {
   try {
@@ -204,8 +237,12 @@ router.get("/:vaultId/todos", auth, async (req, res) => {
     }
 
     const sortedTodos = [...(vault.todos || [])].sort((a, b) => {
-      const orderA = Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER;
-      const orderB = Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER;
+      const orderA = Number.isFinite(a.order)
+        ? a.order
+        : Number.MAX_SAFE_INTEGER;
+      const orderB = Number.isFinite(b.order)
+        ? b.order
+        : Number.MAX_SAFE_INTEGER;
 
       if (orderA !== orderB) {
         return orderA - orderB;
@@ -225,19 +262,29 @@ router.get("/:vaultId/todos", auth, async (req, res) => {
 router.post("/:vaultId/todos", auth, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { title, description, priority, dueDate, repeat, important } = req.body;
+    const { title, description, priority, dueDate, repeat, important } =
+      req.body;
     const normalizedTitle = (title || "").trim();
-    const normalizedRepeat = ["none", "daily", "weekly", "monthly", "yearly"].includes(repeat)
+    const normalizedRepeat = [
+      "none",
+      "daily",
+      "weekly",
+      "monthly",
+      "yearly",
+    ].includes(repeat)
       ? repeat
       : "none";
-    const normalizedImportant = typeof important === "boolean" ? important : false;
+    const normalizedImportant =
+      typeof important === "boolean" ? important : false;
 
     if (!normalizedTitle) {
       return res.status(400).json({ error: "Todo title is required" });
     }
 
     if (normalizedTitle.length > 200) {
-      return res.status(400).json({ error: "Todo title must be at most 200 characters" });
+      return res
+        .status(400)
+        .json({ error: "Todo title must be at most 200 characters" });
     }
 
     const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
@@ -256,13 +303,19 @@ router.post("/:vaultId/todos", auth, async (req, res) => {
     }
 
     const nextOrder = (vault.todos || []).length
-      ? Math.max(...vault.todos.map((todo) => (Number.isFinite(todo.order) ? todo.order : 0))) + 1
+      ? Math.max(
+          ...vault.todos.map((todo) =>
+            Number.isFinite(todo.order) ? todo.order : 0,
+          ),
+        ) + 1
       : 0;
 
     vault.todos.push({
       title: normalizedTitle,
       description: typeof description === "string" ? description.trim() : "",
-      priority: ["low", "medium", "high"].includes(priority) ? priority : "medium",
+      priority: ["low", "medium", "high"].includes(priority)
+        ? priority
+        : "medium",
       dueDate: parsedDueDate,
       repeat: normalizedRepeat,
       important: normalizedImportant,
@@ -287,7 +340,9 @@ router.patch("/:vaultId/todos/reorder", auth, async (req, res) => {
     const { orderedTodoIds } = req.body;
 
     if (!Array.isArray(orderedTodoIds) || orderedTodoIds.length === 0) {
-      return res.status(400).json({ error: "orderedTodoIds must be a non-empty array" });
+      return res
+        .status(400)
+        .json({ error: "orderedTodoIds must be a non-empty array" });
     }
 
     const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
@@ -300,19 +355,25 @@ router.patch("/:vaultId/todos/reorder", auth, async (req, res) => {
     const incomingIds = orderedTodoIds.map((id) => String(id));
 
     if (incomingIds.length !== existingIds.length) {
-      return res.status(400).json({ error: "orderedTodoIds must include all todos" });
+      return res
+        .status(400)
+        .json({ error: "orderedTodoIds must include all todos" });
     }
 
     const existingSet = new Set(existingIds);
     const incomingSet = new Set(incomingIds);
 
     if (existingSet.size !== incomingSet.size) {
-      return res.status(400).json({ error: "orderedTodoIds contains duplicates or invalid ids" });
+      return res
+        .status(400)
+        .json({ error: "orderedTodoIds contains duplicates or invalid ids" });
     }
 
     for (const todoId of incomingSet) {
       if (!existingSet.has(todoId)) {
-        return res.status(400).json({ error: "orderedTodoIds contains invalid todo ids" });
+        return res
+          .status(400)
+          .json({ error: "orderedTodoIds contains invalid todo ids" });
       }
     }
 
@@ -325,7 +386,9 @@ router.patch("/:vaultId/todos/reorder", auth, async (req, res) => {
 
     await vault.save();
 
-    const sortedTodos = [...vault.todos].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const sortedTodos = [...vault.todos].sort(
+      (a, b) => (a.order || 0) - (b.order || 0),
+    );
     res.json(sortedTodos);
   } catch (error) {
     console.error("Error reordering todos:", error);
@@ -337,7 +400,15 @@ router.patch("/:vaultId/todos/reorder", auth, async (req, res) => {
 router.put("/:vaultId/todos/:todoId", auth, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { title, description, priority, completed, dueDate, repeat, important } = req.body;
+    const {
+      title,
+      description,
+      priority,
+      completed,
+      dueDate,
+      repeat,
+      important,
+    } = req.body;
     const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
 
     if (!vault) {
@@ -355,7 +426,9 @@ router.put("/:vaultId/todos/:todoId", auth, async (req, res) => {
         return res.status(400).json({ error: "Todo title is required" });
       }
       if (normalizedTitle.length > 200) {
-        return res.status(400).json({ error: "Todo title must be at most 200 characters" });
+        return res
+          .status(400)
+          .json({ error: "Todo title must be at most 200 characters" });
       }
       todo.title = normalizedTitle;
     }
@@ -368,11 +441,17 @@ router.put("/:vaultId/todos/:todoId", auth, async (req, res) => {
       todo.completed = completed;
     }
 
-    if (typeof priority === "string" && ["low", "medium", "high"].includes(priority)) {
+    if (
+      typeof priority === "string" &&
+      ["low", "medium", "high"].includes(priority)
+    ) {
       todo.priority = priority;
     }
 
-    if (typeof repeat === "string" && ["none", "daily", "weekly", "monthly", "yearly"].includes(repeat)) {
+    if (
+      typeof repeat === "string" &&
+      ["none", "daily", "weekly", "monthly", "yearly"].includes(repeat)
+    ) {
       todo.repeat = repeat;
     }
 
@@ -504,7 +583,8 @@ router.put("/:vaultId/notes/:noteId", auth, async (req, res) => {
       return res.status(404).json({ error: "Note not found" });
     }
 
-    note.title = (title || note.title || "Untitled Note").trim() || "Untitled Note";
+    note.title =
+      (title || note.title || "Untitled Note").trim() || "Untitled Note";
     note.content = content ?? note.content;
     note.updatedAt = new Date();
 
@@ -584,41 +664,47 @@ router.post(
 );
 
 // Delete image from a note
-router.delete("/:vaultId/notes/:noteId/images/:imageId", auth, async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
+router.delete(
+  "/:vaultId/notes/:noteId/images/:imageId",
+  auth,
+  async (req, res) => {
+    try {
+      const userId = req.user.userId;
+      const vault = await Vault.findOne({ _id: req.params.vaultId, userId });
 
-    if (!vault) {
-      return res.status(404).json({ error: "Vault not found" });
+      if (!vault) {
+        return res.status(404).json({ error: "Vault not found" });
+      }
+
+      const note = vault.notes.id(req.params.noteId);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+
+      const image = note.images.id(req.params.imageId);
+      if (!image) {
+        return res.status(404).json({ error: "Image not found" });
+      }
+
+      const relativePath = image.url.startsWith("/")
+        ? image.url.slice(1)
+        : image.url;
+      const imageFilePath = path.join(__dirname, "..", relativePath);
+      if (fs.existsSync(imageFilePath)) {
+        fs.unlinkSync(imageFilePath);
+      }
+
+      image.deleteOne();
+      note.updatedAt = new Date();
+      await vault.save();
+
+      res.json({ message: "Image deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting note image:", error);
+      res.status(500).json({ error: "Failed to delete image" });
     }
-
-    const note = vault.notes.id(req.params.noteId);
-    if (!note) {
-      return res.status(404).json({ error: "Note not found" });
-    }
-
-    const image = note.images.id(req.params.imageId);
-    if (!image) {
-      return res.status(404).json({ error: "Image not found" });
-    }
-
-    const relativePath = image.url.startsWith("/") ? image.url.slice(1) : image.url;
-    const imageFilePath = path.join(__dirname, "..", relativePath);
-    if (fs.existsSync(imageFilePath)) {
-      fs.unlinkSync(imageFilePath);
-    }
-
-    image.deleteOne();
-    note.updatedAt = new Date();
-    await vault.save();
-
-    res.json({ message: "Image deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting note image:", error);
-    res.status(500).json({ error: "Failed to delete image" });
-  }
-});
+  },
+);
 
 // Add a link resource
 router.post("/:vaultId/resources/link", auth, async (req, res) => {

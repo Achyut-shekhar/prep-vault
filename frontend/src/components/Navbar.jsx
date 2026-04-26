@@ -1,7 +1,6 @@
 import {
   Search,
   BookOpen,
-  Users,
   FolderOpen,
   Menu,
   X,
@@ -52,13 +51,6 @@ const Navbar = () => {
             >
               <FolderOpen className="h-4 w-4" />
               My Vault
-            </Link>
-            <Link
-              to="/community"
-              className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <Users className="h-4 w-4" />
-              Community
             </Link>
           </div>
         </div>
@@ -153,14 +145,6 @@ const Navbar = () => {
             >
               <FolderOpen className="h-4 w-4" />
               My Vault
-            </Link>
-            <Link
-              to="/community"
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <Users className="h-4 w-4" />
-              Community
             </Link>
             <hr className="my-2 border-border" />
             {isAuthenticated ? (
