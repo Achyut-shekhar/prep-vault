@@ -20,7 +20,7 @@ const allowedOrigins = new Set([
   "https://www.prepvault.in",
   "http://localhost:5173",
   "http://localhost:8080",
-  "http://localhost:8081", // anshika system 
+  "http://localhost:8081", // anshika system
 ]);
 
 // Include both www and non-www variants of CLIENT_URL automatically.
@@ -91,10 +91,25 @@ app.get("/", (req, res) => {
   res.send("Backend is running");
 });
 
+// Ensure unmatched API routes always return JSON instead of Express HTML.
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    error: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).send("Something broke!");
+
+  const statusCode = err.status || err.statusCode || 500;
+  const message = err.message || "Something broke!";
+
+  if (req.originalUrl.startsWith("/api/")) {
+    return res.status(statusCode).json({ error: message });
+  }
+
+  res.status(statusCode).send("Something broke!");
 });
 
 app.listen(PORT, () => {

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const Vault = require("../models/Vault");
 const Resource = require("../models/Resource");
 const auth = require("../middleware/auth");
@@ -76,6 +77,10 @@ const uploadNoteImage = multer({
 // Get a public vault and its resources by share link
 router.get("/public/:vaultId", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.vaultId)) {
+      return res.status(400).json({ error: "Invalid vault ID" });
+    }
+
     const vault = await Vault.findById(req.params.vaultId);
 
     if (!vault) {

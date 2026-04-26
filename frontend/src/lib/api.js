@@ -62,8 +62,19 @@ const apiRequest = async (endpoint, options = {}) => {
       }
 
       if (!isJson) {
+        const textPreview =
+          typeof data === "string"
+            ? data.replace(/\s+/g, " ").trim().slice(0, 140)
+            : "";
+
+        if (response.status === 404) {
+          throw new Error(
+            `API endpoint not found (404) at ${url}. Backend route may be missing or an older deployment is running.`,
+          );
+        }
+
         throw new Error(
-          `Request failed with status ${response.status}: non-JSON response from ${url}`,
+          `Request failed with status ${response.status}: non-JSON response from ${url}${textPreview ? ` (${textPreview})` : ""}`,
         );
       }
 
