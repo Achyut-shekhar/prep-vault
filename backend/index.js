@@ -80,9 +80,11 @@ app.use("/uploads", express.static("uploads"));
 const authRoutes = require("./routes/auth");
 const searchRoutes = require("./routes/search");
 const vaultRoutes = require("./routes/vault");
+const aiRoutes = require("./routes/ai");
 app.use("/api/auth", authRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/vault", vaultRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Health check
 app.get("/", (req, res) => {
