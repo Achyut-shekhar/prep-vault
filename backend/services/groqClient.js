@@ -1,38 +1,43 @@
 const axios = require("axios");
 
 const GROQ_API_BASE_URL = "https://api.groq.com/openai/v1";
-const DEFAULT_MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+const DEFAULT_MODEL =
+  process.env.GROQ_MODEL ||
+  process.env.GROQ_FALLBACK_MODEL ||
+  "llama-3.1-8b-instant";
+const PROMPT_MAX_CHARS = Number(process.env.GROQ_PROMPT_MAX_CHARS || 8000);
+const MAX_TOKENS_CAP = Number(process.env.GROQ_MAX_TOKENS_CAP || 1500);
 
 const NOTE_STYLE_CONFIG = {
   concise: {
-    summaryWords: "80-140",
-    keyPoints: "4-6",
-    actionItems: "3-5",
+    summaryWords: "60-100",
+    keyPoints: "3-5",
+    actionItems: "2-4",
     tone: "compact and direct",
-    minSummaryWords: 70,
-    minKeyPoints: 4,
-    minActionItems: 3,
-    maxTokens: 900,
+    minSummaryWords: 50,
+    minKeyPoints: 3,
+    minActionItems: 2,
+    maxTokens: 600,
   },
   detailed: {
-    summaryWords: "220-420",
-    keyPoints: "8-14",
-    actionItems: "5-10",
+    summaryWords: "140-240",
+    keyPoints: "6-10",
+    actionItems: "4-8",
     tone: "thorough and explanatory",
-    minSummaryWords: 200,
-    minKeyPoints: 8,
-    minActionItems: 5,
-    maxTokens: 2200,
+    minSummaryWords: 140,
+    minKeyPoints: 6,
+    minActionItems: 4,
+    maxTokens: 1200,
   },
   "exam-ready": {
-    summaryWords: "180-320",
-    keyPoints: "8-12",
-    actionItems: "6-10",
+    summaryWords: "140-220",
+    keyPoints: "6-10",
+    actionItems: "4-8",
     tone: "structured for revision with definitions and memory cues",
-    minSummaryWords: 170,
-    minKeyPoints: 8,
-    minActionItems: 6,
-    maxTokens: 1900,
+    minSummaryWords: 140,
+    minKeyPoints: 6,
+    minActionItems: 4,
+    maxTokens: 1000,
   },
 };
 
@@ -44,45 +49,57 @@ const getGroqApiKey = () => {
   return key;
 };
 
+const buildGroqError = (error) => {
+  const groqError = new Error(
+    error.response?.data?.error?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to generate notes from article",
+  );
+
+  groqError.statusCode = error.response?.status || error.statusCode || 500;
+  groqError.retryAfterSeconds = error.response?.headers?.["retry-after"]
+    ? Number(error.response.headers["retry-after"])
+    : undefined;
+  groqError.isGroqRateLimit = groqError.statusCode === 429;
+
+  return groqError;
+};
+
 const normalizeNoteStyle = (value) => {
-  const normalized = String(value || "detailed").trim().toLowerCase();
+  const normalized = String(value || "detailed")
+    .trim()
+    .toLowerCase();
   return NOTE_STYLE_CONFIG[normalized] ? normalized : "detailed";
 };
 
-const buildNotesPrompt = ({ articleTitle, articleUrl, articleText, noteStyle, isRetry }) => {
+const buildNotesPrompt = ({
+  articleTitle,
+  articleUrl,
+  articleText,
+  noteStyle,
+  isRetry,
+}) => {
   const style = normalizeNoteStyle(noteStyle);
   const styleConfig = NOTE_STYLE_CONFIG[style];
 
+  // Keep prompt compact to reduce token usage. Truncate article text to PROMPT_MAX_CHARS.
+  const truncatedText = String(articleText || "").slice(0, PROMPT_MAX_CHARS);
+
   return [
-    "You are an expert study assistant.",
-    "Read the article and output STRICT JSON only (no markdown).",
-    "Schema:",
-    "{",
-    '  "title": string,',
-    '  "summary": string,',
-    '  "keyPoints": string[],',
-    '  "actionItems": string[],',
-    '  "tags": string[],',
-    '  "confidence": number',
-    "}",
-    "Rules:",
+    "You are an expert study assistant. Output STRICT JSON only.",
+    `Schema: {"title": string, "summary": string, "keyPoints": string[], "actionItems": string[], "tags": string[], "confidence": number}`,
     `- writing mode: ${style}`,
     `- tone: ${styleConfig.tone}`,
-    `- summary: ${styleConfig.summaryWords} words`,
-    `- keyPoints: ${styleConfig.keyPoints} concise bullets`,
-    `- actionItems: ${styleConfig.actionItems} practical tasks`,
-    "- tags: 3-8 lowercase tags",
-    "- confidence: 0 to 1",
-    "- For detailed or exam-ready style, include specifics, examples, and important caveats from the article.",
-    "- Keep output factual and grounded in the provided article.",
+    `- summary target: ${styleConfig.summaryWords} words`,
+    "- tags: 2-6 lowercase tags",
     isRetry
-      ? "- Previous output was too brief. You MUST increase depth and meet all minimum counts and word targets."
+      ? "- If previous output was insufficient, increase depth to meet minimum counts."
       : "",
-    "",
     `Article title: ${articleTitle || "Unknown"}`,
     `Article URL: ${articleUrl || "Unknown"}`,
     "Article text:",
-    articleText,
+    truncatedText,
   ].join("\n");
 };
 
@@ -144,8 +161,12 @@ const isNotesDetailedEnough = (notes, noteStyle) => {
   const styleConfig = NOTE_STYLE_CONFIG[style];
 
   const summaryWordCount = countWords(notes.summary);
-  const keyPointsCount = Array.isArray(notes.keyPoints) ? notes.keyPoints.length : 0;
-  const actionItemsCount = Array.isArray(notes.actionItems) ? notes.actionItems.length : 0;
+  const keyPointsCount = Array.isArray(notes.keyPoints)
+    ? notes.keyPoints.length
+    : 0;
+  const actionItemsCount = Array.isArray(notes.actionItems)
+    ? notes.actionItems.length
+    : 0;
 
   return (
     summaryWordCount >= styleConfig.minSummaryWords &&
@@ -165,49 +186,64 @@ const requestNotesFromGroq = async ({
   const style = normalizeNoteStyle(noteStyle);
   const styleConfig = NOTE_STYLE_CONFIG[style];
 
-  const response = await axios.post(
-    `${GROQ_API_BASE_URL}/chat/completions`,
-    {
-      model: DEFAULT_MODEL,
-      temperature: 0.2,
-      max_tokens: styleConfig.maxTokens,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a precise assistant that always follows output schema and returns valid JSON only.",
-        },
-        {
-          role: "user",
-          content: buildNotesPrompt({
-            articleTitle,
-            articleUrl,
-            articleText,
-            noteStyle: style,
-            isRetry,
-          }),
-        },
-      ],
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 30000,
-    },
-  );
+  try {
+    const maxTokens = Math.min(
+      styleConfig.maxTokens,
+      MAX_TOKENS_CAP || styleConfig.maxTokens,
+    );
 
-  const rawText = response.data?.choices?.[0]?.message?.content;
-  const parsed = safeParseJson(rawText);
-  return normalizeNotesPayload(parsed, articleTitle);
+    const response = await axios.post(
+      `${GROQ_API_BASE_URL}/chat/completions`,
+      {
+        model: DEFAULT_MODEL,
+        temperature: 0.2,
+        max_tokens: maxTokens,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a precise assistant that follows the schema and returns valid JSON only.",
+          },
+          {
+            role: "user",
+            content: buildNotesPrompt({
+              articleTitle,
+              articleUrl,
+              articleText,
+              noteStyle: style,
+              isRetry,
+            }),
+          },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 30000,
+      },
+    );
+
+    const rawText = response.data?.choices?.[0]?.message?.content;
+    const parsed = safeParseJson(rawText);
+    return normalizeNotesPayload(parsed, articleTitle);
+  } catch (error) {
+    throw buildGroqError(error);
+  }
 };
 
-const generateNotesFromArticle = async ({ articleTitle, articleUrl, articleText, noteStyle }) => {
+const generateNotesFromArticle = async ({
+  articleTitle,
+  articleUrl,
+  articleText,
+  noteStyle,
+}) => {
   const apiKey = getGroqApiKey();
   const normalizedStyle = normalizeNoteStyle(noteStyle);
-  let notes = await requestNotesFromGroq({
+  // Single request to reduce token usage and avoid double calls to Groq (helps with TPM quotas).
+  const notes = await requestNotesFromGroq({
     apiKey,
     articleTitle,
     articleUrl,
@@ -215,17 +251,6 @@ const generateNotesFromArticle = async ({ articleTitle, articleUrl, articleText,
     noteStyle: normalizedStyle,
     isRetry: false,
   });
-
-  if (!isNotesDetailedEnough(notes, normalizedStyle)) {
-    notes = await requestNotesFromGroq({
-      apiKey,
-      articleTitle,
-      articleUrl,
-      articleText,
-      noteStyle: normalizedStyle,
-      isRetry: true,
-    });
-  }
 
   return {
     ...notes,
