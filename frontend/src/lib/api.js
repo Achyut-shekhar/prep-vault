@@ -312,45 +312,5 @@ export const searchApi = {
   },
 };
 
-// AI API methods
-export const aiApi = {
-  extractArticle: async (url) => {
-    return apiRequest("/ai/extract", {
-      method: "POST",
-      body: JSON.stringify({ url }),
-    });
-  },
-
-  generateNotesFromArticle: async ({
-    url,
-    articleText,
-    articleTitle,
-    saveToVault = false,
-    vaultId,
-    noteStyle = "detailed",
-    createTodos = false,
-  }) => {
-    return apiRequest("/ai/notes/from-article", {
-      method: "POST",
-      body: JSON.stringify({
-        url,
-        articleText,
-        articleTitle,
-        saveToVault,
-        vaultId,
-        noteStyle,
-        createTodos,
-      }),
-    });
-  },
-
-  scrapeStructured: async (url) => {
-    return apiRequest("/ai/scrape/structured", {
-      method: "POST",
-      body: JSON.stringify({ url }),
-    });
-  },
-};
-
 // Export API_URL for direct use if needed
 export { API_URL };

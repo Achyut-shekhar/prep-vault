@@ -4,7 +4,7 @@ const features = [
     icon: <Search className="h-6 w-6" />,
     title: "Smart Search",
     description:
-      "Find resources from trusted sources across the web instantly with AI-powered search",
+      "Find resources from trusted sources across the web instantly with a fast, focused search experience",
   },
   {
     icon: <FolderOpen className="h-6 w-6" />,

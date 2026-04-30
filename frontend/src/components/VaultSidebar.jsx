@@ -40,7 +40,7 @@ import AddResourceDialog from "./AddResourceDialog";
 import SimpleNotepad from "./SimpleNotepad";
 import VaultTodoList from "./VaultTodoList";
 import { toast } from "sonner";
-import { aiApi, vaultApi } from "@/lib/api";
+import { vaultApi } from "@/lib/api";
 
 const VaultSidebar = () => {
   const [folders, setFolders] = useState([]);
@@ -60,10 +60,6 @@ const VaultSidebar = () => {
   const [targetResource, setTargetResource] = useState(null);
   const [resourceActionLoading, setResourceActionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [articleUrl, setArticleUrl] = useState("");
-  const [generatingAiNote, setGeneratingAiNote] = useState(false);
-  const [noteStyle, setNoteStyle] = useState("detailed");
-  const [createTodosFromAi, setCreateTodosFromAi] = useState(true);
 
   // Fetch vaults on mount
   useEffect(() => {
@@ -292,51 +288,6 @@ const VaultSidebar = () => {
 
   const handleOpenNote = (note) => {
     setEditingNote(note);
-  };
-
-  const handleGenerateAiNote = async () => {
-    if (!selectedFolder) {
-      toast.error("Select a folder first");
-      return;
-    }
-
-    const trimmedUrl = articleUrl.trim();
-    if (!trimmedUrl) {
-      toast.error("Paste an article URL first");
-      return;
-    }
-
-    try {
-      setGeneratingAiNote(true);
-      const result = await aiApi.generateNotesFromArticle({
-        url: trimmedUrl,
-        saveToVault: true,
-        vaultId: selectedFolder,
-        noteStyle,
-        createTodos: createTodosFromAi,
-      });
-
-      if (result.savedNote) {
-        setNotes((prevNotes) => [result.savedNote, ...prevNotes]);
-        setEditingNote(result.savedNote);
-      }
-
-      const createdTodoCount = Array.isArray(result.createdTodos)
-        ? result.createdTodos.length
-        : 0;
-
-      toast.success(
-        createdTodoCount > 0
-          ? `AI note saved with ${createdTodoCount} todos`
-          : "AI note generated and saved",
-      );
-      setArticleUrl("");
-    } catch (error) {
-      console.error("Error generating AI note:", error);
-      toast.error(error.message || "Failed to generate AI note");
-    } finally {
-      setGeneratingAiNote(false);
-    }
   };
 
   const handleNoteSaved = (updatedNote) => {
@@ -674,67 +625,6 @@ const VaultSidebar = () => {
                       className="mt-4 focus-visible:outline-none focus-visible:ring-0"
                     >
                       <div className="rounded-xl border border-border bg-background p-4">
-                        <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
-                          <p className="text-sm font-medium">
-                            AI Notes from Article
-                          </p>
-                          <p className="mb-2 text-xs text-muted-foreground">
-                            Paste a public article URL to generate and auto-save
-                            notes in this folder.
-                          </p>
-                          <div className="mb-2 grid gap-2 sm:grid-cols-2">
-                            <div>
-                              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                                Note Type
-                              </label>
-                              <select
-                                value={noteStyle}
-                                onChange={(event) =>
-                                  setNoteStyle(event.target.value)
-                                }
-                                disabled={generatingAiNote}
-                                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                              >
-                                <option value="concise">Concise</option>
-                                <option value="detailed">Detailed</option>
-                                <option value="exam-ready">Exam Ready</option>
-                              </select>
-                            </div>
-
-                            <label className="mt-6 flex items-center gap-2 text-sm text-muted-foreground sm:mt-0 sm:self-end">
-                              <input
-                                type="checkbox"
-                                checked={createTodosFromAi}
-                                onChange={(event) =>
-                                  setCreateTodosFromAi(event.target.checked)
-                                }
-                                disabled={generatingAiNote}
-                              />
-                              Create folder to-dos from action items
-                            </label>
-                          </div>
-
-                          <div className="flex flex-col gap-2 sm:flex-row">
-                            <Input
-                              value={articleUrl}
-                              onChange={(event) =>
-                                setArticleUrl(event.target.value)
-                              }
-                              placeholder="https://example.com/article"
-                              disabled={generatingAiNote}
-                            />
-                            <Button
-                              type="button"
-                              onClick={handleGenerateAiNote}
-                              disabled={generatingAiNote || !articleUrl.trim()}
-                            >
-                              {generatingAiNote
-                                ? "Generating..."
-                                : "Generate + Save"}
-                            </Button>
-                          </div>
-                        </div>
-
                         <div className="mb-4 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <NotebookPen className="h-5 w-5 text-primary" />
